@@ -1,16 +1,12 @@
-class VM:
-    ip = ""
-    vmtype = ""
-    paraSigma = 0.0
-    paraEA = 0.0
-    result = 0.0
+from google.appengine.ext import db
+
+class VM(db.Model):
     
-    def __init__(self, ip, vmtype, paraSigma, paraEA, result):
-        self.ip = ip
-        self.vmtype = vmtype
-        self.paraSigma = paraSigma
-        self.paraEA = paraEA
-        self.result = result
+    ip = db.StringProperty()
+    vmtype = db.StringProperty()
+    paraSigma = db.FloatProperty()
+    paraEA = db.FloatProperty()
+    result = db.FloatProperty()
     
     def __str__(self):
         return '\
