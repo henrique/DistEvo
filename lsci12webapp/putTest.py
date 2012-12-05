@@ -43,19 +43,26 @@ data_string_param = json.dumps(l2, indent=2)
 # HTTP PUT VM's
 url_local = 'localhost:8080'
 url_gae = 'jcluster12.appspot.com'
-connection =  httplib.HTTPConnection(url_local)
+connection =  httplib.HTTPConnection(url_gae)
 body_content = data_string
-connection.request('PUT', '/put/', body_content)
+headers = {"User-Agent": "python-httplib"}
+connection.request('PUT', '/put/', body_content, headers)
 result = connection.getresponse()
 # Now result.status and result.reason contains interesting stuff
 if result.status == 200:
     print 'PUT vms OK - 200'
+else:
+    print result.status
+connection.close()
     
 # HTTP PUT PARAM's
+connection =  httplib.HTTPConnection(url_gae)
 body_content = data_string_param
-connection.request('PUT', '/put/', body_content)
+connection.request('PUT', '/put/', body_content, headers)
 result = connection.getresponse()
 # Now result.status and result.reason contains interesting stuff
 if result.status == 200:
     print 'PUT params OK - 200'
+else:
+    print result.status
 connection.close()
