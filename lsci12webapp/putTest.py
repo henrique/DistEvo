@@ -23,6 +23,10 @@ job3.paraSigma = 0.451134
 job1.paraEA = 0.8877
 job2.paraEA = 0.8811
 job3.paraEA = 0.8872
+job1.running = False
+job2.running = False
+job3.running = False
+
 
 # 3 VM's as test for PUT 
 x = VM()

@@ -12,3 +12,4 @@ class VM(db.Model):
     def getJSON(self):
         s = {'ip': self.ip, 'vmtype': self.vmtype, 'jobId': self.jobId, 'paraSigma': self.paraSigma, 'paraEA': self.paraEA, 'result': self.result}
         return s
+    

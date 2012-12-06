@@ -10,6 +10,26 @@ class MainPage(webapp2.RequestHandler):
       self.response.headers['Content-Type'] = 'text/html'
       file = open('index.html')
       self.response.out.write(file.read())
+
+class GetJob(webapp2.RequestHandler):
+    def get(self):
+        self.response.headers['Content-Type'] = 'application/json'
+        logging.info("get received")
+        
+        # GET a not running job from DB
+        jobs = db.GqlQuery("Select * "
+                           "FROM Job "
+                           "ORDER BY jobId")
+        countJobs = jobs.count()
+        logging.info("countJobs: "+str(countJobs))
+        if countJobs > 0:
+           l = { 'jobs': [jobs[0].getJSON()]}
+        else:
+           l = { 'jobs': []}
+          
+        content = json.dumps(l, indent=2)
+        logging.info(content)
+        self.response.out.write(content)
       
       
 class Put(webapp2.RequestHandler):
@@ -48,17 +68,19 @@ class Put(webapp2.RequestHandler):
             logging.info('put vm['+vm.ip+'] into datastore')
         
     if decoded.has_key('jobs'): 
-        count_params = len(decoded['jobs'])
-        logging.info('count jobs: '+str(count_params))
+        count_jobs = len(decoded['jobs'])
+        logging.info('count jobs: '+str(count_jobs))
         jobs = []
         for job in decoded['jobs']:
             jobId = job['jobId']
             paraSigma = job['paraSigma']
             paraEA = job['paraEA']
+            running = job['running']
             temp = Job(key_name=str(jobId))
             temp.jobId = jobId
             temp.paraSigma = paraSigma
             temp.paraEA = paraEA
+            temp.running = running
             jobs.append(temp)
         
         for job in jobs:
@@ -67,7 +89,8 @@ class Put(webapp2.RequestHandler):
         
 
 app = webapp2.WSGIApplication([('/', MainPage),
-                               ('/put/', Put)],
+                               ('/put/', Put),
+                               ('/get/job/', GetJob)],
                               debug=True)
 
 # APP STARTUP - INIT DB
