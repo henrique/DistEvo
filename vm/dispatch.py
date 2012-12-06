@@ -131,7 +131,8 @@ algo | simulOnly           | 0
 algo | policPlot           | 0
 algo | simulPlot           | 0
 algo | makeSav             | 0
-algo | simulWealth0        | 0""" % (job.paraEA, job.paraEA, job.paraSigma, job.paraSigma)
+algo | simulWealth0        | 0
+""" % (job.paraEA, job.paraEA, job.paraSigma, job.paraSigma)
 
 def create_workenv(job):
     w = str(job.jobId)
@@ -185,21 +186,36 @@ def main():
             call_forwardPremiumOut(job)
             jobs.append(job)
 
-        print "[+] Checking job status (%d/%d)" % (len(jobs), NCORES)
+        print "[+] Checking job status (%d/%d running)" % (len(jobs), NCORES)
         for job in jobs:
             proc = job.proc
             # Check if the job terminated
             if proc is not None and proc.poll() is not None:
+                job.running = False
+                job.finished = True
                 rc = proc.returncode
                 if rc == 0:
                     gather_results(job)
-                    # TODO: submit results to GAE
-                    shutil.rmtree(str(job.jobId))
+                    if gae_put_job(URL, job) == 200:
+                        print "[+] Successfully completed job %d (FFB=%f)" % (job.jobId, job.result)
+                        shutil.rmtree(str(job.jobId))
+                        jobs.remove(job)
+                    else:
+                        print "[E] Failed to submit completed job to GAE"
                 else:
-                    # TODO: mark job as not done and not taken on GAE
                     print "[E] Job %d terminated with code %d" % (job.jobId, rc)
+                    print "[E] stderr:"
+                    print proc.stderr.read()
+                    print "[E] stdout:"
+                    print proc.stdout.read()
+                    job.result = 99.99
+                    if gae_put_job(URL, job) == 200:
+                        print "[+] Penalty for job %d (FFB=%f)" % (job.jobId, job.result)
+                        shutil.rmtree(str(job.jobId))
+                        jobs.remove(job)
+                    else:
+                        print "[E] Failed to submit completed job to GAE"
 
-                jobs.remove(job)
                 i += 1
 
         # TODO: Update VM state on GAE
