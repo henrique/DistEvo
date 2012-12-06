@@ -37,15 +37,16 @@ z = VM()
 
 x.ip = '198.168.5.4'
 x.vmtype = 'Amazon'
-x.jobId = job1.jobId
 
 y.ip = '192.168.1.1'
 y.vmtype = 'FutureGrid'
-y.jobId = job2.jobId
 
 z.ip = '192.168.1.98'
 z.vmtype = 'Amazon'
-z.jobId = job3.jobId
+
+job1.vmIp = x.ip
+job2.vmIp = y.ip
+job3.vmIp = z.ip
 
 
 l = { 'jobs': [job1.getJSON(), job2.getJSON(), job3.getJSON()]}

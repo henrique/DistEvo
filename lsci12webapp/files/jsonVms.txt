@@ -2,17 +2,14 @@
   "vms": [
     {
       "ip": "198.168.5.4", 
-      "jobId": 1, 
       "vmtype": "Amazon"
     }, 
     {
       "ip": "192.168.1.1", 
-      "jobId": 2, 
       "vmtype": "FutureGrid"
     }, 
     {
       "ip": "192.168.1.98", 
-      "jobId": 3, 
       "vmtype": "Amazon"
     }
   ]

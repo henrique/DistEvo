@@ -1,27 +1,30 @@
 {
   "jobs": [
     {
-      "paraSigma": 0.4534, 
       "finished": false, 
       "paraEA": 0.8877, 
       "jobId": 1, 
       "running": true, 
+      "paraSigma": 0.4534, 
+      "vmIp": "198.168.5.4", 
       "result": null
     }, 
     {
-      "paraSigma": 0.43234, 
       "finished": false, 
       "paraEA": 0.8811, 
       "jobId": 2, 
       "running": true, 
+      "paraSigma": 0.43234, 
+      "vmIp": "192.168.1.1", 
       "result": null
     }, 
     {
-      "paraSigma": 0.451134, 
       "finished": false, 
       "paraEA": 0.8872, 
       "jobId": 3, 
       "running": false, 
+      "paraSigma": 0.451134, 
+      "vmIp": "192.168.1.98", 
       "result": null
     }
   ]
