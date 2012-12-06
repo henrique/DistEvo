@@ -124,11 +124,13 @@ def runApp(ex, sigmax):
       call(["./forwardPremiumOut"])
       try:
         with open('output/simulation.out') as of:
-          print "simulation.out", of.readline()
+          print "simulation.out", of.readline() #TODO: read result
+          FAKE_FF_BETA = 2
+          return FAKE_FF_BETA
       except IOError as e:
         print 'Job Failed!'
-      FAKE_FF_BETA = 2
-      return FAKE_FF_BETA
+        
+      return PENALTY_VALUE
 
 
 def calibrate_forwardPremium():
