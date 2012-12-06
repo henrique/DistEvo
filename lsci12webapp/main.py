@@ -50,6 +50,26 @@ class GetAllJobs(webapp2.RequestHandler):
         content = json.dumps(l, indent=2)
         logging.info(content)
         self.response.out.write(content)
+        
+class GetAllVms(webapp2.RequestHandler):
+    def get(self):
+        self.response.headers['Content-Type'] = 'application/json'
+        logging.info("get all vms received")
+        
+        # GET a not running job from DB
+        vms = db.GqlQuery("Select * "
+                           "FROM VM "
+                           "ORDER BY ip")
+        countVms = vms.count()
+        logging.info("countVms: "+str(countVms))
+        if countVms > 0:
+           l = { 'vms': [vm.getJSON() for vm in vms]}
+        else:
+           l = { 'vms': []}
+          
+        content = json.dumps(l, indent=2)
+        logging.info(content)
+        self.response.out.write(content)
       
       
 class Put(webapp2.RequestHandler):
@@ -111,7 +131,8 @@ class Put(webapp2.RequestHandler):
 app = webapp2.WSGIApplication([('/', MainPage),
                                ('/put/', Put),
                                ('/get/job/', GetJob),
-                               ('/get/jobs/', GetAllJobs)],
+                               ('/get/jobs/', GetAllJobs),
+                               ('/get/vms/', GetAllVms)],
                               debug=True)
 
 # APP STARTUP - INIT DB
