@@ -16,8 +16,7 @@ class GetJob(webapp2.RequestHandler):
         self.response.headers['Content-Type'] = 'application/json'
         logging.info("get single job received")
         
-        # GET a not running job from DB
-        # TODO: FIX BUG return correct jobs !!!!
+        # GET a not running& not finished& not requested job from DB
         q = Job.all()
         q.filter("running =", False)
         q.filter("finished =", False)
