@@ -27,8 +27,6 @@ if result.status == 200:
             temp = Job(key_name=str(job['jobId']))
             temp.set(job)
             jobs.append(temp)
-        
-        for job in jobs:
             print job
 else:
     print "ERROR http status = "+str(result.status)

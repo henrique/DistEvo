@@ -1,9 +1,12 @@
 #! /usr/bin/env python
 
 import os
+import sys
 import logging
 import shutil
 import subprocess
+
+from fp_lib import *
 
 import numpy as np
 
@@ -11,45 +14,7 @@ from subprocess import call
 
 from gc3libs.optimizer.dif_evolution import DifferentialEvolutionParallel
 
-PENALTY_VALUE=10000
 
-
-class nlcOne4eachPair():
-  def __init__(self, lower_bds, upper_bds):
-
-    self.lower_bds = lower_bds
-    self.upper_bds = upper_bds
-    self.ctryPair = ['JP', 'US']
- 
-    self.EY = [ 1.005416, 1.007292 ]
-    self.sigmaY = [ 0.010643, 0.00862 ]
-      
-  def __call__(self, x):
-    '''
-    Evaluates constraints. 
-    Inputs: 
-      x -- Habit parametrization, EH, sigmaH
-    Outputs: 
-      c -- Vector of constraints values, where c_i >= 0 indicates that constraint is satisified.
-           Constraints 1-4 are bound constraints for EH and sigmaH
-           Constraints 5 and 6 are economic constraints, one for Japan, one for US. 
-    '''
-    c = np.array([])
-    # bound constraints
-    # EH box
-    c = np.append(c, x[0] - self.lower_bds[0])
-    c = np.append(c, -(x[0] - self.upper_bds[0]))
-    # sigmaH box
-    c = np.append(c, x[1] - self.lower_bds[1])
-    c = np.append(c, -(x[1] - self.upper_bds[1]))
-    # both countries have the same E
-    EH     = np.array([x[0], x[0]])
-    sigmaH = np.array([x[1], x[1]])
-
-    for ixCtry in range(2):
-      c = np.append(c, ( EH[ixCtry] / sigmaH[ixCtry] ) * ( self.sigmaY[ixCtry] / self.EY[ixCtry] ) - 1 )
-
-    return c
 
 def forwardPremium(vectors):
     """
@@ -107,32 +72,6 @@ def forwardPremium(vectors):
     return results
 
 
-def runApp(ex, sigmax):
-      print "forwardPremiumOut running with EX=%g, sigmaX=%g ..." % (ex, sigmax)
-      # the actual vale should be extracted from the forwardPremium output file 'simulation.out'
-      call(["rm", "-rf", "output*", "parameters.in"])
-      #call(["mkdir", "output"])
-      rf = open('parameters.in.orig', 'r')
-      with open('parameters.in', 'w') as wf:
-        while 1:
-          line = rf.readline()
-          if not line:
-              break
-          line = line.replace('EX', str(ex))
-          line = line.replace("sigmaX", str(sigmax))
-          wf.write(line)
-      call(["./forwardPremiumOut"])
-      try:
-        with open('output/simulation.out') as of:
-          print "simulation.out", of.readline() #TODO: read result
-          FAKE_FF_BETA = 2
-          return FAKE_FF_BETA
-      except IOError as e:
-        print 'Job Failed!'
-        
-      return PENALTY_VALUE
-
-
 def calibrate_forwardPremium():
   """
   Drver script to calibrate forwardPremium EX and sigmaX parameters.
@@ -163,21 +102,22 @@ def calibrate_forwardPremium():
     nlc = ev_constr # pass constraints object 
     )
 
-  # Initialise population using the arguments passed to the
-  # DifferentialEvolutionParallel iniitalization
-  opt.new_pop = opt.draw_initial_sample()
-
-  # This is where the population gets evaluated
-  # it is part of the initialization step
-  newVals = forwardPremium(opt.new_pop)
-
-  # Update iteration count
-  opt.cur_iter += 1
-
-  # Update population and evaluate convergence
-  opt.update_population(opt.new_pop, newVals)
+  if True:
+      # Initialise population using the arguments passed to the
+      # DifferentialEvolutionParallel iniitalization
+      opt.new_pop = opt.draw_initial_sample()
+    
+      # This is where the population gets evaluated
+      # it is part of the initialization step
+      newVals = forwardPremium(opt.new_pop)
+    
+      # Update iteration count
+      opt.cur_iter += 1
+    
+      # Update population and evaluate convergence
+      opt.update_population(opt.new_pop, newVals)
   
-  while not opt.has_converged():
+  else:
 
     # Generate new population and enforce constrains
     opt.new_pop = opt.enforce_constr_re_evolve(opt.modify(opt.pop))
@@ -193,12 +133,16 @@ def calibrate_forwardPremium():
     # Update population and evaluate convergence
     opt.update_population(opt.new_pop, newVals)
 
-  # Once iteration has terminated, extract `bestval` which should represent
-  # the element in *all* populations that lead to the closest match to the
-  # empirical value
-  EX_best, sigmaX_best = opt.best
-
-  print "Calibration converged after [%d] steps. EX_best: %f, sigmaX_best: %f" % (opt.cur_iter, EX_best, sigmaX_best)
+  if opt.has_converged():
+      # Once iteration has terminated, extract `bestval` which should represent
+      # the element in *all* populations that lead to the closest match to the
+      # empirical value
+      EX_best, sigmaX_best = opt.best
+    
+      print "Calibration converged after [%d] steps. EX_best: %f, sigmaX_best: %f" % (opt.cur_iter, EX_best, sigmaX_best)
+      
+      sys.exit()
   
 if __name__ == '__main__':
-  calibrate_forwardPremium()
+    while 1:
+        calibrate_forwardPremium()
