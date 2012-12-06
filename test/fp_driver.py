@@ -67,82 +67,85 @@ def forwardPremium(vectors):
     # replace this with a real implementation
     results = []
     for ex, sigmax in vectors:
-      FAKE_FF_BETA = runApp(ex, sigmax)
-      results.append(abs(FAKE_FF_BETA - (-0.63))/0.25)
+        FAKE_FF_BETA = runApp(ex, sigmax)
+        results.append(abs(FAKE_FF_BETA - (-0.63))/0.25)
     return results
 
 
 def calibrate_forwardPremium():
-  """
-  Drver script to calibrate forwardPremium EX and sigmaX parameters.
-  It uses DifferentialEvolutionParallel as an implementation of
-  Ken Price's differential evolution
-  algorithm: [[http://www1.icsi.berkeley.edu/~storn/code.html]].
-  """
-
-  dim = 2 # the population will be composed of 2 parameters to  optimze: [ EX, sigmaX ]
-  lower_bounds = [0.5,0.001] # Respectivaly for [ EX, sigmaX ]
-  upper_bounds = [1,0.01]  # Respectivaly for [ EX, sigmaX ]
-  y_conv_crit = 0.98 # convergence treshold; stop when the evaluated output function y_conv_crit
-
-  # define constraints
-  ev_constr = nlcOne4eachPair(lower_bounds, upper_bounds)
-
-  opt = DifferentialEvolutionParallel(
-    dim = dim,          # number of parameters of the objective function
-    lower_bds = lower_bounds,
-    upper_bds = upper_bounds,
-    pop_size = 5,     # number of population members ### orig:100 #TODO
-    de_step_size = 0.85,# DE-stepsize ex [0, 2]
-    prob_crossover = 1, # crossover probabililty constant ex [0, 1]
-    itermax = 20,      # maximum number of iterations (generations)
-    x_conv_crit = None, # stop when variation among x's is < this
-    y_conv_crit = y_conv_crit, # stop when ofunc < y_conv_crit
-    de_strategy = 'DE_local_to_best',
-    nlc = ev_constr # pass constraints object 
-    )
-
-  if True:
-      # Initialise population using the arguments passed to the
-      # DifferentialEvolutionParallel iniitalization
-      opt.new_pop = opt.draw_initial_sample()
+    """
+    Drver script to calibrate forwardPremium EX and sigmaX parameters.
+    It uses DifferentialEvolutionParallel as an implementation of
+    Ken Price's differential evolution
+    algorithm: [[http://www1.icsi.berkeley.edu/~storn/code.html]].
+    """
     
-      # This is where the population gets evaluated
-      # it is part of the initialization step
-      newVals = forwardPremium(opt.new_pop)
+    dim = 2 # the population will be composed of 2 parameters to  optimze: [ EX, sigmaX ]
+    lower_bounds = [0.5,0.001] # Respectivaly for [ EX, sigmaX ]
+    upper_bounds = [1,0.01]  # Respectivaly for [ EX, sigmaX ]
+    y_conv_crit = 0.98 # convergence treshold; stop when the evaluated output function y_conv_crit
     
-      # Update iteration count
-      opt.cur_iter += 1
+    # define constraints
+    ev_constr = nlcOne4eachPair(lower_bounds, upper_bounds)
     
-      # Update population and evaluate convergence
-      opt.update_population(opt.new_pop, newVals)
-  
-  else:
-
-    # Generate new population and enforce constrains
-    opt.new_pop = opt.enforce_constr_re_evolve(opt.modify(opt.pop))
-
-    # Update iteration count
-    opt.cur_iter += 1
-
-    # This is where the population gets evaluated
-    # this step gets iterated until a population converges
-    newVals = forwardPremium(opt.new_pop)
-    print 'newVals', newVals
-
-    # Update population and evaluate convergence
-    opt.update_population(opt.new_pop, newVals)
-
-  if opt.has_converged():
-      # Once iteration has terminated, extract `bestval` which should represent
-      # the element in *all* populations that lead to the closest match to the
-      # empirical value
-      EX_best, sigmaX_best = opt.best
+    opt = DifferentialEvolutionParallel(
+        dim = dim,          # number of parameters of the objective function
+        lower_bds = lower_bounds,
+        upper_bds = upper_bounds,
+        pop_size = 5,     # number of population members ### orig:100 #TODO
+        de_step_size = 0.85,# DE-stepsize ex [0, 2]
+        prob_crossover = 1, # crossover probabililty constant ex [0, 1]
+        itermax = 20,      # maximum number of iterations (generations)
+        x_conv_crit = None, # stop when variation among x's is < this
+        y_conv_crit = y_conv_crit, # stop when ofunc < y_conv_crit
+        de_strategy = 'DE_local_to_best',
+        nlc = ev_constr # pass constraints object 
+      )
     
-      print "Calibration converged after [%d] steps. EX_best: %f, sigmaX_best: %f" % (opt.cur_iter, EX_best, sigmaX_best)
+    if True:
+        # Initialise population using the arguments passed to the
+        # DifferentialEvolutionParallel iniitalization
+        opt.new_pop = opt.draw_initial_sample()
       
-      sys.exit()
+        # This is where the population gets evaluated
+        # it is part of the initialization step
+        newVals = forwardPremium(opt.new_pop)
+      
+        # Update iteration count
+        opt.cur_iter += 1
+      
+        # Update population and evaluate convergence
+        opt.update_population(opt.new_pop, newVals)
+    
+    else:
+    
+        # Generate new population and enforce constrains
+        opt.new_pop = opt.enforce_constr_re_evolve(opt.modify(opt.pop))
+        
+        # Update iteration count
+        opt.cur_iter += 1
+        
+        # This is where the population gets evaluated
+        # this step gets iterated until a population converges
+        newVals = forwardPremium(opt.new_pop)
+        print 'newVals', newVals
+        
+        # Update population and evaluate convergence
+        opt.update_population(opt.new_pop, newVals)
+    
+    if opt.has_converged():
+        # Once iteration has terminated, extract `bestval` which should represent
+        # the element in *all* populations that lead to the closest match to the
+        # empirical value
+        EX_best, sigmaX_best = opt.best
+      
+        print "Calibration converged after [%d] steps. EX_best: %f, sigmaX_best: %f" % (opt.cur_iter, EX_best, sigmaX_best)
+        
+        sys.exit()
   
 if __name__ == '__main__':
+    getJobs()
+    getNextJob()
+    getVMs()
     while 1:
         calibrate_forwardPremium()

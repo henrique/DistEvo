@@ -38,8 +38,8 @@ class Job():
         return self.__dict__
     
     def __repr__(self):
-        return "jobId: "+str(self.jobId)+" vmIp: "+str(self.vmIp)+" paraSigma: "+str(self.paraSigma)+" paraEA:"+str(self.paraEA)+" running: "+str(self.running)+" finished: "+str(self.finished)+" result: "+str(self.result)
-    
+        return str(self.__dict__)
+ 
     def set(self, job):
         self.jobId = job['jobId']
         self.vmIp = job['vmIp']
@@ -49,6 +49,26 @@ class Job():
         self.finished = job['finished']
         self.result = job['result']
         
+        
+        
+class VM():
+    def __init__(self, **entries): 
+        self.__dict__.update(entries)
+    
+#    ip = db.StringProperty()
+#    vmtype = db.StringProperty()
+#    dateUpdate = db.DateTimeProperty(auto_now_add=True)
+    
+    def getJSON(self):
+        return self.__dict__
+    
+    def __repr__(self):
+        return str(self.__dict__)
+    
+    def set(self, vm):
+        self.ip = vm['ip']
+        self.vmtype = vm['vmtype']
+
 
 
 class nlcOne4eachPair():
@@ -120,21 +140,22 @@ def getJobs():
     connection.request('GET', '/get/jobs/')
     result = connection.getresponse()
     data = result.read()
+    jobs = []
     
     if result.status == 200:
         decoded = json.loads(data)
         if decoded.has_key('jobs'): 
             count_jobs = len(decoded['jobs'])
             print 'count jobs: '+str(count_jobs)
-            jobs = []
             for job in decoded['jobs']:
-                temp = Job(key_name=str(job['jobId']))
-                temp.set(job)
+                temp = Job(**job)
                 jobs.append(temp)
                 print job
     else:
         print "ERROR http status = "+str(result.status)
+        
     connection.close()
+    return jobs
     
     
 def getNextJob():
@@ -149,14 +170,35 @@ def getNextJob():
         if decoded.has_key('jobs'): 
             count_jobs = len(decoded['jobs'])
             print 'count jobs: '+str(count_jobs)
-            jobs = []
             for job in decoded['jobs']:
-                temp = Job(key_name=str(job['jobId']))
-                temp.set(job)
-                jobs.append(temp)
-            
-            for job in jobs:
-                print job
+                temp = Job(**job)
+                print temp
+                break
     else:
         print "ERROR http status = "+str(result.status)
+        
     connection.close()
+    return temp
+    
+    
+def getVMs():
+    connection =  httplib.HTTPConnection(url)
+    connection.request('GET', '/get/vms/')
+    result = connection.getresponse()
+    data = result.read()
+    vms = []
+    
+    if result.status == 200:
+        decoded = json.loads(data)
+        if decoded.has_key('vms'): 
+            count_vms = len(decoded['vms'])
+            print 'count vms: '+str(count_vms)
+            for vm in decoded['vms']:
+                temp = VM(**vm)
+                vms.append(temp)
+                print vm
+    else:
+        print "ERROR http status = "+str(result.status)
+        
+    connection.close()
+    return vms
