@@ -7,12 +7,11 @@ class VM(db.Model):
     dateUpdate = db.DateTimeProperty(auto_now_add=True)
     
     def getJSON(self):
-        s = {'ip': self.ip, 'vmtype': self.vmtype}
+        s = {'ip': self.ip, 'vmtype': self.vmtype, 'dateUpdate': str(self.dateUpdate)}
         return s
     
     def __repr__(self):
-        return "ip: "+str(self.ip)+" vmtype: "+str(self.vmtype)
+        return "ip: "+str(self.ip)+" vmtype: "+str(self.vmtype)+" dateUpdate: "+str(self.dateUpdate)
     
     def set(self, vm):
-        self.ip = vm['ip']
         self.vmtype = vm['vmtype']

@@ -14,7 +14,18 @@ indexes:
   properties:
   - name: finished
   - name: running
+  - name: counter
+
+- kind: Job
+  properties:
+  - name: finished
+  - name: running
   - name: jobId
+
+- kind: Job
+  properties:
+  - name: running
+  - name: counter
 
 - kind: Job
   properties:

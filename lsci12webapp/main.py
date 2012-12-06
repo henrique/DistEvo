@@ -17,19 +17,24 @@ class GetJob(webapp2.RequestHandler):
         logging.info("get single job received")
         
         # GET a not running job from DB
-        jobs = db.GqlQuery("Select * "
-                           "FROM Job "
-                           "ORDER BY running, finished, jobId ASC")
-        countJobs = jobs.count()
-        logging.info("countJobs: "+str(countJobs))
-        if countJobs > 0:
-           l = { 'jobs': [jobs[0].getJSON()]}
-        else:
-           l = { 'jobs': []}
-          
+        # TODO: FIX BUG return correct jobs !!!!
+        q = Job.all()
+        q.filter("running =", False)
+        q.filter("finished =", False)
+        q.filter("counter <", 1)
+        job = q.get()
+        if job == None:
+            logging.info('no not running job found that was not requested already, abort')
+            self.error(500)
+            return
+        
+        l = { 'jobs': [job.getJSON()]}
         content = json.dumps(l, indent=2)
         logging.info(content)
         self.response.out.write(content)
+        # increment job counter
+        job.counter += 1
+        job.put()
         
 class GetAllJobs(webapp2.RequestHandler):
     def get(self):
@@ -72,10 +77,10 @@ class GetAllVms(webapp2.RequestHandler):
         self.response.out.write(content)
       
       
-class Put(webapp2.RequestHandler):
+class PutAll(webapp2.RequestHandler):
   def put(self):
    
-    logging.info('put received')
+    logging.info('put all received')
    
     data_string = self.request.body
     decoded = json.loads(data_string)
@@ -88,8 +93,10 @@ class Put(webapp2.RequestHandler):
         logging.info('count vms: '+str(count_vms))
         vms = []
         for vm in decoded['vms']:
-            temp = VM(key_name=vm['ip'])
+            ip =  self.request.remote_addr
+            temp = VM(key_name=ip)
             temp.set(vm)
+            temp.ip = ip
             vms.append(temp)
         
         for vm in vms:
@@ -108,10 +115,46 @@ class Put(webapp2.RequestHandler):
         for job in jobs:
             job.put()
             logging.info('put job['+str(job.jobId)+'] into datastore')
+
+class PutJob(webapp2.RequestHandler):
+  def put(self):
+      
+    logging.info('put single job received')
+    data_string = self.request.body
+    decoded = json.loads(data_string)
+    if decoded.has_key('jobs'): 
+        count_jobs = len(decoded['jobs'])
+        logging.info('count jobs: '+str(count_jobs))
+        if count_jobs > 1:
+            logging.info("more than 1 job, abort")
+            self.error(500)
+            return
+        jobs = []
+        for job in decoded['jobs']:
+            temp = Job(key_name=str(job['jobId']))
+            temp.set(job)
+            # Lookup Job in DB and see if already running
+            # if not running overwrite and send 200 else 500
+            q = Job.all()
+            q.filter("jobId =", temp.jobId)
+            result = q.get()
+            if result.running == True:
+                if result.vmIp != self.request.remote_addr:
+                    logging.info('job already running from other vm, abort')
+                    self.error(500)
+                    return
+            temp.vmIp = self.request.remote_addr
+            jobs.append(temp)
+        
+        for job in jobs:
+            job.put()
+            logging.info('put job['+str(job.jobId)+'] into datastore')                        
+
         
 
 app = webapp2.WSGIApplication([('/', MainPage),
-                               ('/put/', Put),
+                               ('/put/', PutAll),
+                               ('/put/job/', PutJob),
                                ('/get/job/', GetJob),
                                ('/get/jobs/', GetAllJobs),
                                ('/get/vms/', GetAllVms)],
