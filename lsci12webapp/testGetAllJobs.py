@@ -8,7 +8,7 @@ from job import *
 # localhost:8080
 # jcluster12.appspot.com
 ######################
-url = 'localhost:8080'
+url = 'jcluster12.appspot.com'
 
 
 # GET single job test
@@ -24,15 +24,8 @@ if result.status == 200:
         print 'count jobs: '+str(count_jobs)
         jobs = []
         for job in decoded['jobs']:
-            jobId = job['jobId']
-            paraSigma = job['paraSigma']
-            paraEA = job['paraEA']
-            running = job['running']
-            temp = Job(key_name=str(jobId))
-            temp.jobId = jobId
-            temp.paraSigma = paraSigma
-            temp.paraEA = paraEA
-            temp.running = running
+            temp = Job(key_name=str(job['jobId']))
+            temp.set(job)
             jobs.append(temp)
         
         for job in jobs:

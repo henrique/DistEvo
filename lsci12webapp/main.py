@@ -19,7 +19,7 @@ class GetJob(webapp2.RequestHandler):
         # GET a not running job from DB
         jobs = db.GqlQuery("Select * "
                            "FROM Job "
-                           "ORDER BY jobId")
+                           "ORDER BY running, finished, jobId ASC")
         countJobs = jobs.count()
         logging.info("countJobs: "+str(countJobs))
         if countJobs > 0:
@@ -88,19 +88,8 @@ class Put(webapp2.RequestHandler):
         logging.info('count vms: '+str(count_vms))
         vms = []
         for vm in decoded['vms']:
-            ip = vm['ip']
-            vmtype = vm['vmtype']
-            jobId = vm['jobId']
-            paraSigma = vm['paraSigma']
-            paraEA = vm['paraEA']
-            result = vm['result']
-            temp = VM(key_name=ip)
-            temp.ip = ip
-            temp.vmtype = vmtype
-            temp.jobId = jobId
-            temp.paraSigma = paraSigma
-            temp.paraEA = paraEA
-            temp.result = result
+            temp = VM(key_name=vm['ip'])
+            temp.set(vm)
             vms.append(temp)
         
         for vm in vms:
@@ -112,15 +101,8 @@ class Put(webapp2.RequestHandler):
         logging.info('count jobs: '+str(count_jobs))
         jobs = []
         for job in decoded['jobs']:
-            jobId = job['jobId']
-            paraSigma = job['paraSigma']
-            paraEA = job['paraEA']
-            running = job['running']
-            temp = Job(key_name=str(jobId))
-            temp.jobId = jobId
-            temp.paraSigma = paraSigma
-            temp.paraEA = paraEA
-            temp.running = running
+            temp = Job(key_name=str(job['jobId']))
+            temp.set(job)
             jobs.append(temp)
         
         for job in jobs:
