@@ -9,4 +9,4 @@ handlers:
   script: main.app
 
 - url: /files
-  static_dir: /files
+  static_dir: files
