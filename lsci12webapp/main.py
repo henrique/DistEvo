@@ -14,7 +14,7 @@ class MainPage(webapp2.RequestHandler):
 class GetJob(webapp2.RequestHandler):
     def get(self):
         self.response.headers['Content-Type'] = 'application/json'
-        logging.info("get received")
+        logging.info("get single job received")
         
         # GET a not running job from DB
         jobs = db.GqlQuery("Select * "
@@ -24,6 +24,26 @@ class GetJob(webapp2.RequestHandler):
         logging.info("countJobs: "+str(countJobs))
         if countJobs > 0:
            l = { 'jobs': [jobs[0].getJSON()]}
+        else:
+           l = { 'jobs': []}
+          
+        content = json.dumps(l, indent=2)
+        logging.info(content)
+        self.response.out.write(content)
+        
+class GetAllJobs(webapp2.RequestHandler):
+    def get(self):
+        self.response.headers['Content-Type'] = 'application/json'
+        logging.info("get all jobs received")
+        
+        # GET a not running job from DB
+        jobs = db.GqlQuery("Select * "
+                           "FROM Job "
+                           "ORDER BY jobId")
+        countJobs = jobs.count()
+        logging.info("countJobs: "+str(countJobs))
+        if countJobs > 0:
+           l = { 'jobs': [job.getJSON() for job in jobs]}
         else:
            l = { 'jobs': []}
           
@@ -90,7 +110,8 @@ class Put(webapp2.RequestHandler):
 
 app = webapp2.WSGIApplication([('/', MainPage),
                                ('/put/', Put),
-                               ('/get/job/', GetJob)],
+                               ('/get/job/', GetJob),
+                               ('/get/jobs/', GetAllJobs)],
                               debug=True)
 
 # APP STARTUP - INIT DB
