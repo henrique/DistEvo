@@ -1,0 +1,35 @@
+FamaFrenchBeta:                   0.632585
+Avg. Consumption Tradables A: 0.502672
+Std. Consumption Tradables A: 0.002957
+
+Avg. Consumption Tradables B: 0.503687
+Std. Consumption Tradables B: 0.003347
+
+Avg. q1:    1.011093
+Std. q1:    0.094896
+
+Avg. q2:    0.999456
+Std. q2:    0.093804
+
+Avg. i1:    -0.006615
+Std. i1:    0.094110
+
+Avg. i2:    0.004960
+Std. i2:    0.094108
+
+Avg. i1-i2: -0.011575
+Std. i1-i2: 0.000016
+
+Avg. RP:    0.000965
+Std. RP:    0.000021
+
+Avg. hA:    0.900005
+Std. hA:    0.002521
+
+Avg. hB:    0.899997
+Std. hB:    0.002562
+
+Iteration: 0  alpha: 0.022387   beta: 2.847946
+Alpha: 0.022387 [-nan]
+Beta: 2.847946 [-nan]
+simulation ended
