@@ -9,6 +9,9 @@ import shutil
 import subprocess
 import re
 
+# THIS IS SET BY THE DRIVER BEFORE PASSING IN USERDATA
+MY_IP = '1.2.3.4'
+
 # URL = 'localhost:8080'
 URL = 'jcluster12.appspot.com'
 
@@ -21,21 +24,21 @@ NCORES = multiprocessing.cpu_count()
 R_FAMA_FRENCH_BETA = re.compile(r"^FamaFrenchBeta:\s*(.*)$")
 
 class Job():
-    def __init__(self, key_name, json=None):
+    def __init__(self, key_name=None, json=None):
         self.key_name = key_name
         self.proc = None
         if json == None:
             self.jobId = 0
             self.vmIp = '0.0.0.0'
-            self.paraSigma = float('nan')
-            self.paraEA = float('nan')
-            self.result = float('nan')
+            self.paraSigma = None
+            self.paraEA = None
+            self.result = None
             self.running = False
             self.finished = False
         else:
             self.set(json)
 
-    def getJson(self):
+    def getJSON(self):
         return { 'jobId'     : self.jobId,
                  'vmIp'      : self.vmIp,
                  'paraSigma' : self.paraSigma,
@@ -56,27 +59,47 @@ class Job():
         self.finished = job['finished']
         self.result = job['result']
 
-def get_unique_job(url):
+def gae_get_job(url):
     # GET single job test
     conn =  httplib.HTTPConnection(url)
     conn.request('GET', '/get/jobs/')
     result = conn.getresponse()
-    data = result.read()
-    conn.close()
-
     if result.status != 200:
         print "[E] got HTTP status %d" % result.status
         return None
 
+    data = result.read()
+    conn.close()
+    return data
+
+def gae_put_job(url, job):
+    # HTTP PUT Job's
+    conn =  httplib.HTTPConnection(url)
+    body_content = json.dumps({ 'jobs' : [ job.getJSON() ] }, indent=2)
+    headers = { "User-Agent": "python-httplib" }
+    conn.request('PUT', '/put/', body_content, headers)
+    result = conn.getresponse()
+    conn.close()
+    if result.status != 200:
+        print "[E] got HTTP status %d" % result.status
+    return result.status
+
+def get_unique_job(url):
+    data = gae_get_job(url)
+    if data == None:
+        return None
     jdata = json.loads(data)
     if jdata.has_key('jobs'):
         for job in jdata['jobs']:
             j = Job(key_name=str(job['jobId']), json=job)
             # Sanity test since I also get already finished jobs
-            if j.result == None and j.finished != True:
+            if j.result == None and j.finished != True and j.running == False:
+                print "[+] Got eligible job with ID %d" % j.jobId
+                j.running = True
+                j.vmIp = MY_IP
+                if gae_put_job(url, j) != 200:
+                    return None     # We couldn't claim the job, wait for the next turn
                 return j
-
-    # TODO: 2-way handshake with reading counter and status etc.
 
 def get_parameters_in(job):
     return """group | name | value
@@ -174,7 +197,7 @@ def main():
                     shutil.rmtree(str(job.jobId))
                 else:
                     # TODO: mark job as not done and not taken on GAE
-                    print "[+] Job %d terminated with code %d" % (job.jobId, rc)
+                    print "[E] Job %d terminated with code %d" % (job.jobId, rc)
 
                 jobs.remove(job)
                 i += 1
