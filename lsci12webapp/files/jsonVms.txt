@@ -1,0 +1,28 @@
+{
+  "vms": [
+    {
+      "ip": "198.168.5.4", 
+      "paraSigma": 0.4534, 
+      "paraEA": 0.8877, 
+      "jobId": 1, 
+      "vmtype": "Amazon", 
+      "result": null
+    }, 
+    {
+      "ip": "192.168.1.1", 
+      "paraSigma": 0.43234, 
+      "paraEA": 0.8811, 
+      "jobId": 2, 
+      "vmtype": "FutureGrid", 
+      "result": null
+    }, 
+    {
+      "ip": "192.168.1.98", 
+      "paraSigma": 0.451134, 
+      "paraEA": 0.8872, 
+      "jobId": 3, 
+      "vmtype": "Amazon", 
+      "result": null
+    }
+  ]
+}

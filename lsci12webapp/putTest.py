@@ -50,6 +50,14 @@ l2 = {'vms': [x.getJSON(), y.getJSON(), z.getJSON()]}
 data_string_jobs = json.dumps(l, indent=2)
 data_string_vms = json.dumps(l2, indent=2)
 
+file = open('files/jsonJobs.txt', 'w')
+file.write(data_string_jobs)
+file.close()
+
+file = open('files/jsonVms.txt', 'w')
+file.write(data_string_vms)
+file.close()
+
 # HTTP PUT Job's
 connection =  httplib.HTTPConnection(url)
 body_content = data_string_jobs

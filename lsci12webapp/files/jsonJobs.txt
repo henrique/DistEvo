@@ -1,0 +1,19 @@
+{
+  "jobs": [
+    {
+      "paraEA": 0.8877, 
+      "paraSigma": 0.4534, 
+      "jobId": 1
+    }, 
+    {
+      "paraEA": 0.8811, 
+      "paraSigma": 0.43234, 
+      "jobId": 2
+    }, 
+    {
+      "paraEA": 0.8872, 
+      "paraSigma": 0.451134, 
+      "jobId": 3
+    }
+  ]
+}
