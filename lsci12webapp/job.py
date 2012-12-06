@@ -1,12 +1,12 @@
 from google.appengine.ext import db
 
-class Param(db.Model):
+class Job(db.Model):
     
-    index = db.IntegerProperty()
+    jobId = db.IntegerProperty()
     paraSigma = db.FloatProperty()
     paraEA = db.FloatProperty()
 
     def getJSON(self):
-        s = {'index': self.index, 'paraSigma': self.paraSigma, 'paraEA': self.paraEA}
+        s = {'jobId': self.jobId, 'paraSigma': self.paraSigma, 'paraEA': self.paraEA}
         return s
     

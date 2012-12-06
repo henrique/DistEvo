@@ -3,7 +3,7 @@ import logging
 import json
 from google.appengine.ext import db
 from vm import *
-from param import *
+from job import *
 
 class MainPage(webapp2.RequestHandler):
   def get(self):
@@ -19,7 +19,8 @@ class Put(webapp2.RequestHandler):
     data_string = self.request.body
     decoded = json.loads(data_string)
     decoded2 = json.dumps(decoded, indent=2)
-#    logging.info(decoded2)
+    
+    logging.info(decoded2)
    
     if decoded.has_key('vms'):
         count_vms = len(decoded['vms'])
@@ -28,12 +29,14 @@ class Put(webapp2.RequestHandler):
         for vm in decoded['vms']:
             ip = vm['ip']
             vmtype = vm['vmtype']
+            jobId = vm['jobId']
             paraSigma = vm['paraSigma']
             paraEA = vm['paraEA']
             result = vm['result']
             temp = VM(key_name=ip)
             temp.ip = ip
             temp.vmtype = vmtype
+            temp.jobId = jobId
             temp.paraSigma = paraSigma
             temp.paraEA = paraEA
             temp.result = result
@@ -43,23 +46,23 @@ class Put(webapp2.RequestHandler):
             vm.put()
             logging.info('put vm['+vm.ip+'] into datastore')
         
-    if decoded.has_key('params'): 
-        count_params = len(decoded['params'])
-        logging.info('count params: '+str(count_params))
-        params = []
-        for para in decoded['params']:
-            index = para['index']
-            paraSigma = para['paraSigma']
-            paraEA = para['paraEA']
-            temp = Param(key_name=str(index))
-            temp.index = index
+    if decoded.has_key('jobs'): 
+        count_params = len(decoded['jobs'])
+        logging.info('count jobs: '+str(count_params))
+        jobs = []
+        for job in decoded['jobs']:
+            jobId = job['jobId']
+            paraSigma = job['paraSigma']
+            paraEA = job['paraEA']
+            temp = Job(key_name=str(jobId))
+            temp.jobId = jobId
             temp.paraSigma = paraSigma
             temp.paraEA = paraEA
-            params.append(temp)
+            jobs.append(temp)
         
-        for para in params:
-            para.put()
-            logging.info('put param['+str(para.index)+'] into datastore')
+        for job in jobs:
+            job.put()
+            logging.info('put job['+str(job.jobId)+'] into datastore')
         
 
 app = webapp2.WSGIApplication([('/', MainPage),
