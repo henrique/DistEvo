@@ -1,0 +1,9 @@
+method               tauchen
+states               9
+vars                 2
+base                 basket
+Ctry                 US
+E                    [NaN, NaN]
+Std                  [NaN, NaN]
+Cor                  NaN
+Theta                [ NaN , 0 ; 0 , 0  ]
