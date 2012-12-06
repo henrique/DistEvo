@@ -163,7 +163,7 @@ def gather_results(job):
         if result:
             ffb = float(result.group(1))
             print "[+] Job %d got FamaFrenchBeta %f" % (job.jobId, ffb)
-            job.results = ffb
+            job.result = ffb
             break
     f.close()
 
