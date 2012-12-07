@@ -35,6 +35,27 @@ class GetJob(webapp2.RequestHandler):
         job.counter += 1
         job.put()
         
+class GetVm(webapp2.RequestHandler):
+    def get(self):
+        self.response.headers['Content-Type'] = 'application/json'
+        logging.info("get single vm received")
+        
+        # GET VM with same request.remote_addr
+        q = VM.all()
+        q.filter("vm.ip =", self.request.remote_addr)
+
+        vm = q.get()
+        if vm == None:
+            logging.info('no vm found for this ip: '+str(self.request.remote_addr)+', abort')
+            self.error(500)
+            return
+        
+        l = { 'vms': [vm.getJSON()]}
+        content = json.dumps(l, indent=2)
+        logging.info(content)
+        self.response.out.write(content)
+       
+        
 class GetAllJobs(webapp2.RequestHandler):
     def get(self):
         self.response.headers['Content-Type'] = 'application/json'
@@ -155,6 +176,7 @@ app = webapp2.WSGIApplication([('/', MainPage),
                                ('/put/', PutAll),
                                ('/put/job/', PutJob),
                                ('/get/job/', GetJob),
+                               ('/get/vm/', GetVm),
                                ('/get/jobs/', GetAllJobs),
                                ('/get/vms/', GetAllVms)],
                               debug=True)
