@@ -58,7 +58,6 @@ class Job():
 #        self.result = job['result']
         
         
-        
 class VM(dict):
     def __init__(self, **entries): 
         self.__dict__.update(entries)
@@ -117,6 +116,7 @@ class nlcOne4eachPair():
 
     return c
 
+
 def runApp(ex, sigmax):
       print "forwardPremiumOut running with EX=%g, sigmaX=%g ..." % (ex, sigmax)
       # the actual vale should be extracted from the forwardPremium output file 'simulation.out'
@@ -141,6 +141,16 @@ def runApp(ex, sigmax):
         print 'Job Failed!'
         
       return PENALTY_VALUE
+
+
+def pop2Jobs(pop):
+    jobs = []
+    i = 0
+    for ex, sig in pop:
+        i += 1
+        job = Job(jobId=i,paraEA=ex,paraSigma=sig)
+        jobs.append(job)
+    return jobs
 
 
 def getJobs():
@@ -228,6 +238,22 @@ def putJobs(jobs):
         print result.status
     connection.close()
 
+
+def putJob(job):
+    # HTTP PUT Job
+    connection =  httplib.HTTPConnection(url)
+    body_content = json.dumps({ 'jobs': [job] }, indent=2, default=Job.serialize)
+    print body_content
+    headers = {"User-Agent": "python-httplib"}
+    connection.request('PUT', '/put/job', body_content, headers)
+    result = connection.getresponse()
+    if result.status == 200:
+        print 'PUT jobs OK - HTTP 200'
+    else:
+        print result.status
+    connection.close()
+
+
 def putVMs(vms):
     # HTTP PUT VM's
     connection =  httplib.HTTPConnection(url)
@@ -241,3 +267,6 @@ def putVMs(vms):
     else:
         print result.status
     connection.close()
+
+def createVMs(popSize):
+    return True #TODO

@@ -1,19 +1,15 @@
 #! /usr/bin/env python
 
-import os
-import sys
-import logging
-import shutil
-import subprocess
-
-from fp_lib import *
+import time
 
 import numpy as np
 
-from subprocess import call
+from fp_lib import *
 
 from gc3libs.optimizer.dif_evolution import DifferentialEvolutionParallel
 
+
+POPULATION_SIZE=3 #TODO 100
 
 
 def forwardPremium(vectors):
@@ -92,7 +88,7 @@ def calibrate_forwardPremium():
         dim = dim,          # number of parameters of the objective function
         lower_bds = lower_bounds,
         upper_bds = upper_bounds,
-        pop_size = 5,     # number of population members ### orig:100 #TODO
+        pop_size = POPULATION_SIZE,   # number of population members
         de_step_size = 0.85,# DE-stepsize ex [0, 2]
         prob_crossover = 1, # crossover probabililty constant ex [0, 1]
         itermax = 20,      # maximum number of iterations (generations)
@@ -101,64 +97,72 @@ def calibrate_forwardPremium():
         de_strategy = 'DE_local_to_best',
         nlc = ev_constr # pass constraints object 
       )
+
+
+    # Jobs: create and manage population
+    pop = getJobs()
     
-    # testing
-    getJobs()
-    getNextJob()
-    getVMs()
-    
-    if True:
+    if not pop: # empty
         # Initialise population using the arguments passed to the
         # DifferentialEvolutionParallel iniitalization
         opt.new_pop = opt.draw_initial_sample()
-      
-        # This is where the population gets evaluated
-        # it is part of the initialization step
-        #newVals = forwardPremium(opt.new_pop)
-      
-        # Update iteration count
-        opt.cur_iter += 1  #TODO add current iteration  to DB?
-        
-        jobs = []
-        id = 0
-
-        for ex, sig in opt.new_pop:
-            id += 1
-            job = Job(jobId=id,paraEA=ex,paraSigma=sig)
-            jobs.append(job)
             
-        putJobs(jobs)
-      
-        # Update population and evaluate convergence
-        #opt.update_population(opt.new_pop, newVals)
-        sys.exit()
-    
+        putJobs(pop2Jobs(opt.new_pop))
+        
+    else: # finished?
+        finished = True
+        for job in pop:
+            finished &= job.finished
+            
+        if finished:
+            # Update population and evaluate convergence
+            newVals = []
+            opt.new_pop = np.zeros( (POPULATION_SIZE, dim) )
+            k = 0
+            for job in pop:
+                newVals.append(job.result if job.result != None else PENALTY_VALUE)                
+                opt.new_pop[k,:] = (job.paraEA, job.paraSigma)
+                k += 1
+                
+            # Update iteration count
+            opt.cur_iter += 1 #TODO: get from db
+            opt.bestval = PENALTY_VALUE+1 #!!!
+            opt.vals = newVals #!!!
+            opt.pop = opt.new_pop #!!!
+                
+            opt.update_population(opt.new_pop, newVals)
+
+            if not opt.has_converged():
+                # Generate new population and enforce constrains
+                opt.new_pop = opt.enforce_constr_re_evolve(opt.modify(opt.pop))
+                
+                # Push and run again!
+                putJobs(pop2Jobs(opt.new_pop))
+                
+            else:
+                # Once iteration has terminated, extract `bestval` which should represent
+                # the element in *all* populations that lead to the closest match to the
+                # empirical value
+                EX_best, sigmaX_best = opt.best
+                
+                print "Calibration converged after [%d] steps. EX_best: %f, sigmaX_best: %f" % (opt.cur_iter, EX_best, sigmaX_best)
+                sys.exit()
+        
+        
+    # VM's: create and manage dispatchers
+    vms = getVMs()
+
+    if not vms: # empty
+        createVMs(POPULATION_SIZE) #TODO create VMs
     else:
-    
-        # Generate new population and enforce constrains
-        opt.new_pop = opt.enforce_constr_re_evolve(opt.modify(opt.pop))
-        
-        # Update iteration count
-        opt.cur_iter += 1
-        
-        # This is where the population gets evaluated
-        # this step gets iterated until a population converges
-        newVals = forwardPremium(opt.new_pop)
-        print 'newVals', newVals
-        
-        # Update population and evaluate convergence
-        opt.update_population(opt.new_pop, newVals)
-    
-    if opt.has_converged():
-        # Once iteration has terminated, extract `bestval` which should represent
-        # the element in *all* populations that lead to the closest match to the
-        # empirical value
-        EX_best, sigmaX_best = opt.best
-      
-        print "Calibration converged after [%d] steps. EX_best: %f, sigmaX_best: %f" % (opt.cur_iter, EX_best, sigmaX_best)
-        
-        sys.exit()
-  
+        pass  #TODO manage VMs
+
+
+    # Then, we could also run the forwardPremium binary here; Single script solution
+
+
+
 if __name__ == '__main__':
     while 1:
         calibrate_forwardPremium()
+        time.sleep(5)
