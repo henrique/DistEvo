@@ -1,16 +1,13 @@
 #!/usr/bin/env python
 
-import os
-import time
-import httplib
-import json
+import os, sys
+import datetime, time
+import httplib, json
 import multiprocessing
 import shutil
 import subprocess
 import re
-
-# THIS IS SET BY THE DRIVER BEFORE PASSING IN USERDATA
-MY_IP = '1.2.3.4'
+import random
 
 # URL = 'localhost:8080'
 URL = 'jcluster12.appspot.com'
@@ -20,6 +17,8 @@ BIN_PATH = '/apps/ifi'
 BIN = 'forwardPremiumOut'
 WORKDIR = '.'
 NCORES = multiprocessing.cpu_count()
+
+PENALTY = 99.99
 
 R_FAMA_FRENCH_BETA = re.compile(r"^FamaFrenchBeta:\s*(.*)$")
 
@@ -35,6 +34,7 @@ class Job():
             self.result = None
             self.running = False
             self.finished = False
+            self.counter = 0
         else:
             self.set(json)
 
@@ -59,10 +59,35 @@ class Job():
         self.finished = job['finished']
         self.result = job['result']
 
+class VM():
+    def __init__(self, key_name=None, json=None):
+        self.key_name = key_name
+        if json == None:
+            self.ip = '0.0.0.0'
+            self.vmtype = ''
+            self.dateUpdate = datetime.date.today()
+        else:
+            self.set(json)
+
+    def getJSON(self):
+        return { 'ip'         : self.ip,
+                 'vmtype'     : self.vmtype,
+                 'dateUpdate' : self.dateUpdate }
+
+    def __repr__(self):
+        return "ip: " + str(self.ip) + " vmtype: " + str(self.vmtype) + " dataUpdate: " + str(self.dateUpdate)
+
+    def set(self, vm):
+        self.ip = vm['ip']
+        self.vmtype = vm['vmtype']
+        self.dateUpdate = vm['dateUpdate']
+
+
+
 def gae_get_job(url):
     # GET single job test
     conn =  httplib.HTTPConnection(url)
-    conn.request('GET', '/get/jobs/')
+    conn.request('GET', '/get/job/')
     result = conn.getresponse()
     if result.status != 200:
         print "[E] got HTTP status %d" % result.status
@@ -84,6 +109,29 @@ def gae_put_job(url, job):
         print "[E] got HTTP status %d" % result.status
     return result.status
 
+def gae_get_vm(url):
+    conn =  httplib.HTTPConnection(url)
+    conn.request('GET', '/get/vm/')
+    result = conn.getresponse()
+    if result.status != 200:
+        print "[E] got HTTP status %d" % result.status
+        return None
+
+    data = result.read()
+    conn.close()
+    return data
+
+def get_vm(url):
+    data = gae_get_vm(url)
+    if data == None:
+        return None
+    jdata = json.loads(data)
+    if jdata.has_key['vms']:
+        for vm in jdata['vms']:
+            return VM(keyname=str(vm['ip']), json=vm)
+
+    return None
+
 def get_unique_job(url):
     data = gae_get_job(url)
     if data == None:
@@ -94,12 +142,12 @@ def get_unique_job(url):
             j = Job(key_name=str(job['jobId']), json=job)
             # Sanity test since I also get already finished jobs
             if j.result == None and j.finished != True and j.running == False:
-                print "[+] Got eligible job with ID %d" % j.jobId
                 j.running = True
-                j.vmIp = MY_IP
                 if gae_put_job(url, j) != 200:
                     return None     # We couldn't claim the job, wait for the next turn
                 return j
+
+    return None
 
 def get_parameters_in(job):
     return """group | name | value
@@ -156,6 +204,7 @@ def call_forwardPremiumOut(job):
                             stdout=subprocess.PIPE, stderr=subprocess.PIPE)
 
 def gather_results(job):
+    ffb = PENALTY
     w = str(job.jobId)
     f = open(os.path.join(w, 'output', 'simulation.out'))
     for line in f:
@@ -163,63 +212,70 @@ def gather_results(job):
         if result:
             ffb = float(result.group(1))
             print "[+] Job %d got FamaFrenchBeta %f" % (job.jobId, ffb)
-            job.result = ffb
             break
+
     f.close()
+    return ffb
 
 def main():
 
     os.chdir(WORKDIR)
+
+    vm = gae_get_vm(URL)
+    if vm == None:
+        print "[E] no VM instance found"
+        sys.exit(-1)
+
     jobs = []
 
     i = 0
-    # while True:
-    while i < 5:
+    while True:
         # Core with nothing to do -> get a new job
         if len(jobs) < NCORES:
             job = get_unique_job(URL)
             if job == None:
-                print "[-] No new job found, time to sleep"
-                continue
+                print "[-] No new job found, waiting..."
+            else:
+                print "[+] Got eligible job with ID %d" % j.jobId
+                create_workenv(job)
+                call_forwardPremiumOut(job)
+                jobs.append(job)
 
-            create_workenv(job)
-            call_forwardPremiumOut(job)
-            jobs.append(job)
-
-        print "[+] Checking job status (%d/%d running)" % (len(jobs), NCORES)
+        print "[+] Checking job states (%d/%d running)" % (len(jobs), NCORES)
         for job in jobs:
             proc = job.proc
             # Check if the job terminated
             if proc is not None and proc.poll() is not None:
                 job.running = False
                 job.finished = True
+                job.result = PENALTY  # gets updated by gather_results
+
                 rc = proc.returncode
                 if rc == 0:
-                    gather_results(job)
+                    job.result = gather_results(job)
                     if gae_put_job(URL, job) == 200:
                         print "[+] Successfully completed job %d (FFB=%f)" % (job.jobId, job.result)
                         shutil.rmtree(str(job.jobId))
                         jobs.remove(job)
                     else:
-                        print "[E] Failed to submit completed job to GAE"
+                        print "[E] Failed to submit completed job to GAE, trying again later"
                 else:
                     print "[E] Job %d terminated with code %d" % (job.jobId, rc)
                     print "[E] stderr:"
                     print proc.stderr.read()
                     print "[E] stdout:"
                     print proc.stdout.read()
-                    job.result = 99.99
                     if gae_put_job(URL, job) == 200:
-                        print "[+] Penalty for job %d (FFB=%f)" % (job.jobId, job.result)
+                        print "[+] Completed job %d with PENALTY (FFB=%f)" % (job.jobId, job.result)
                         shutil.rmtree(str(job.jobId))
                         jobs.remove(job)
                     else:
                         print "[E] Failed to submit completed job to GAE"
 
-                i += 1
-
         # TODO: Update VM state on GAE
-        time.sleep(10)
+
+        # wait between 5 and 10 seconds to prevent several VMs from accessing GAE simultaneously
+        time.sleep(random.randrange(5, 10))
 
 if __name__ == '__main__':
     main()
