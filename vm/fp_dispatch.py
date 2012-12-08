@@ -15,7 +15,7 @@ URL = 'jcluster12.appspot.com'
 SKEL_INPUT = '/opt/ifi/input'
 BIN_PATH = '/apps/ifi'
 BIN = 'forwardPremiumOut'
-WORKDIR = '.'
+WORKDIR = '/var/run/lsci2012'
 NCORES = multiprocessing.cpu_count()
 
 PENALTY = 99.99
@@ -221,6 +221,8 @@ def main():
 
     os.chdir(WORKDIR)
 
+    print "[+] ForwardPremium dispatcher starting up..."
+
     vm = gae_get_vm(URL)
     if vm == None:
         print "[E] no VM instance found"
@@ -228,7 +230,6 @@ def main():
 
     jobs = []
 
-    i = 0
     while True:
         # Core with nothing to do -> get a new job
         if len(jobs) < NCORES:
