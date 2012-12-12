@@ -35,6 +35,7 @@ class Job():
             self.running = False
             self.finished = False
             self.counter = 0
+            self.iteration = 0
         else:
             self.set(json)
 
@@ -45,10 +46,11 @@ class Job():
                  'paraEA'    : self.paraEA,
                  'running'   : self.running,
                  'finished'  : self.finished,
-                 'result'    : self.result }
+                 'result'    : self.result,
+                 'iteration' : self.iteration }
 
     def __repr__(self):
-        return "jobId: " + str(self.jobId) + " vmIp: " + str(self.vmIp) + " paraSigma: " + str(self.paraSigma) + " paraEA: " + str(self.paraEA) + " running: " + str(self.running) + " finished: " + str(self.finished) + " result: " + str(self.result)
+        return "jobId: " + str(self.jobId) + " vmIp: " + str(self.vmIp) + " paraSigma: " + str(self.paraSigma) + " paraEA: " + str(self.paraEA) + " running: " + str(self.running) + " finished: " + str(self.finished) + " result: " + str(self.result + " iteration: "+str(self.iteration))
 
     def set(self, job):
         self.jobId = job['jobId']
@@ -58,6 +60,7 @@ class Job():
         self.running = job['running']
         self.finished = job['finished']
         self.result = job['result']
+        self.iteration = job['iteration']
 
 class VM():
     def __init__(self, key_name=None, json=None):
