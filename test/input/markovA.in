@@ -1,9 +1,0 @@
-method               tauchen
-states               9
-vars                 2
-base                 basket
-Ctry                 JP
-E                    [Nan, Nan]
-Std                  [NaN, NaN]
-Cor                  NaN
-Theta                [ NaN , 0 ; 0 , 0  ]
