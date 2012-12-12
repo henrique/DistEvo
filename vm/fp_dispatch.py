@@ -65,7 +65,7 @@ class VM():
         if json == None:
             self.ip = '0.0.0.0'
             self.vmtype = ''
-            self.dateUpdate = datetime.date.today()
+            self.dateUpdate = str(datetime.date.now())
         else:
             self.set(json)
 
