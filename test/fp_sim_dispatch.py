@@ -10,8 +10,8 @@ import re
 import random
 
 # URL = 'localhost:8080'
-# URL = 'jcluster12.appspot.com'
-URL = 'lsci-2012.appspot.com'
+URL = 'jcluster12.appspot.com'
+#URL = 'lsci-2012.appspot.com'
 
 SKEL_INPUT = '/home/henrique/lsci/project/lsci2012/test/input'
 BIN_PATH = '/home/henrique/lsci/project/lsci2012/test'
@@ -224,6 +224,7 @@ def gather_results(job):
         result = R_FAMA_FRENCH_BETA.match(line)
         if result:
             ffb = float(result.group(1))
+            ffb = abs(ffb - (-0.63)) / 0.25
             print "[+] Job %d got FamaFrenchBeta %f" % (job.jobId, ffb)
             break
 
