@@ -8,7 +8,7 @@ from job import *
 # localhost:8080
 # jcluster12.appspot.com
 ######################
-url = 'jcluster12.appspot.com'
+url = 'localhost:8080'
 
 
 # GET single job test

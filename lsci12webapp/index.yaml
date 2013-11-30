@@ -18,17 +18,6 @@ indexes:
 
 - kind: Job
   properties:
-  - name: finished
-  - name: running
+  - name: iteration
   - name: jobId
 
-- kind: Job
-  properties:
-  - name: running
-  - name: counter
-
-- kind: Job
-  properties:
-  - name: running
-  - name: finished
-  - name: jobId

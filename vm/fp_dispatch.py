@@ -10,7 +10,8 @@ import re
 import random
 
 # URL = 'localhost:8080'
-URL = 'jcluster12.appspot.com'
+# URL = 'jcluster12.appspot.com'
+URL = 'lsci-12.appspot.com'
 
 SKEL_INPUT = '/opt/ifi/input'
 BIN_PATH = '/apps/ifi'
@@ -22,12 +23,14 @@ PENALTY = 99.99
 
 R_FAMA_FRENCH_BETA = re.compile(r"^FamaFrenchBeta:\s*(.*)$")
 
+
 class Job():
     def __init__(self, key_name=None, json=None):
         self.key_name = key_name
         self.proc = None
         if json == None:
             self.jobId = 0
+            self.iteration = 0
             self.vmIp = '0.0.0.0'
             self.paraSigma = None
             self.paraEA = None
@@ -35,34 +38,29 @@ class Job():
             self.running = False
             self.finished = False
             self.counter = 0
-            self.iteration = 0
         else:
             self.set(json)
 
-    def getJSON(self):
-        return { 'jobId'     : self.jobId,
-                 'vmIp'      : self.vmIp,
-                 'paraSigma' : self.paraSigma,
-                 'paraEA'    : self.paraEA,
-                 'running'   : self.running,
-                 'finished'  : self.finished,
-                 'result'    : self.result,
-                 'iteration' : self.iteration,
-                 'counter'   : self.counter }
 
+    def getJSON(self):
+        s = {'jobId': self.jobId, 'iteration': self.iteration, 'vmIp': self.vmIp, 'paraSigma': self.paraSigma, 'paraEA': self.paraEA, 'running': self.running, 'finished': self.finished, 'result': self.result, 'counter': self.counter}
+        return s
+    
     def __repr__(self):
-        return "jobId: " + str(self.jobId) + " vmIp: " + str(self.vmIp) + " paraSigma: " + str(self.paraSigma) + " paraEA: " + str(self.paraEA) + " running: " + str(self.running) + " finished: " + str(self.finished) + " result: " + str(self.result + " iteration: "+str(self.iteration)+ " counter: "+str(self.counter))
+        return str(self.getJSON())
 
     def set(self, job):
         self.jobId = job['jobId']
+        self.iteration = job['iteration']
         self.vmIp = job['vmIp']
         self.paraSigma = job['paraSigma']
         self.paraEA = job['paraEA']
         self.running = job['running']
         self.finished = job['finished']
         self.result = job['result']
-        self.iteration = job['iteration']
         self.counter = job['counter']
+
+
 
 class VM():
     def __init__(self, key_name=None, json=None):
@@ -140,9 +138,9 @@ def get_vm(url):
 def gae_put_vm(url, vm):
     conn =  httplib.HTTPConnection(url)
     body_content = json.dumps({ 'vms' : [ vm.getJSON() ] }, indent=2)
+    headers = { "User-Agent": "python-httplib" }
     conn.request('PUT', '/put/vm/', body_content, headers)
     result = conn.getresponse()
-    conn.close()
     conn.close()
     if result.status != 200:
         print "[E] got HTTP status %d" % result.status
@@ -227,6 +225,7 @@ def gather_results(job):
         result = R_FAMA_FRENCH_BETA.match(line)
         if result:
             ffb = float(result.group(1))
+            ffb = abs(ffb - (-0.63)) / 0.25
             print "[+] Job %d got FamaFrenchBeta %f" % (job.jobId, ffb)
             break
 
@@ -238,14 +237,14 @@ def main():
     os.chdir(WORKDIR)
 
     print "[+] ForwardPremium dispatcher starting up..."
-
-    vm = gae_get_vm(URL)
-    if vm == None:
-        print "[E] no VM instance found"
-        sys.exit(-1)
+    """
+    vm = None
+    while not vm:
+        vm = gae_get_vm(URL)
+        time.sleep(10)
 
     print "[+] Got VM: %s" % vm
-
+    """
     jobs = []
 
     while True:
@@ -255,7 +254,7 @@ def main():
             if job == None:
                 print "[-] No new job found, waiting..."
             else:
-                print "[+] Got eligible job with ID %d" % j.jobId
+                print "[+] Got eligible job with ID %d" % job.jobId
                 create_workenv(job)
                 call_forwardPremiumOut(job)
                 jobs.append(job)
@@ -291,7 +290,7 @@ def main():
                     else:
                         print "[E] Failed to submit completed job to GAE"
 
-        gae_put_vm(URL, vm)
+#        gae_put_vm(URL, vm)
 
         # wait between 5 and 10 seconds to prevent several VMs from accessing GAE simultaneously
         time.sleep(random.randrange(5, 10))

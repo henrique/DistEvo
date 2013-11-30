@@ -2,14 +2,17 @@ import webapp2
 import logging
 import json
 from google.appengine.ext import db
+from google.appengine.api import memcache
 from vm import *
 from job import *
+
 
 class MainPage(webapp2.RequestHandler):
   def get(self):
       self.response.headers['Content-Type'] = 'text/html'
       file = open('index.html')
       self.response.out.write(file.read())
+
 
 class GetJob(webapp2.RequestHandler):
     def get(self):
@@ -34,7 +37,8 @@ class GetJob(webapp2.RequestHandler):
         # increment job counter
         job.counter += 1
         job.put()
-        
+
+
 class GetVm(webapp2.RequestHandler):
     def get(self):
         self.response.headers['Content-Type'] = 'application/json'
@@ -42,7 +46,7 @@ class GetVm(webapp2.RequestHandler):
         
         # GET VM with same request.remote_addr
         q = VM.all()
-        q.filter("vm.ip =", self.request.remote_addr)
+        q.filter("ip =", self.request.remote_addr)
 
         vm = q.get()
         if vm == None:
@@ -57,14 +61,32 @@ class GetVm(webapp2.RequestHandler):
        
         
 class GetAllJobs(webapp2.RequestHandler):
+    cachekey = 'alljobs'
+
     def get(self):
         self.response.headers['Content-Type'] = 'application/json'
-        logging.info("get all jobs received")
+        data = memcache.get(self.cachekey)
+        if data is None:
+            data = self.getFromDB()
+            if memcache.set(self.cachekey, data, 300): #5min
+                logging.info("adding to cache: " + self.cachekey)
+        
+        logging.info(data)
+        self.response.out.write(data)
+    
+    
+    def getFromDB(self):
+        #l = {}
+        #cur_iter = Job.currentIteration()
+        logging.info("get all jobs from db")
+        #l['iteration'] = cur_iter
+        
         
         # GET a not running job from DB
         jobs = db.GqlQuery("Select * "
                            "FROM Job "
-                           "ORDER BY jobId")
+                           #"WHERE iteration = :1 "
+                           "ORDER BY iteration, jobId")#, cur_iter)
         countJobs = jobs.count()
         logging.info("countJobs: "+str(countJobs))
         if countJobs > 0:
@@ -73,9 +95,9 @@ class GetAllJobs(webapp2.RequestHandler):
            l = { 'jobs': []}
           
         content = json.dumps(l, indent=2)
-        logging.info(content)
-        self.response.out.write(content)
-        
+        return content
+
+
 class GetAllVms(webapp2.RequestHandler):
     def get(self):
         self.response.headers['Content-Type'] = 'application/json'
@@ -95,12 +117,37 @@ class GetAllVms(webapp2.RequestHandler):
         content = json.dumps(l, indent=2)
         logging.info(content)
         self.response.out.write(content)
+
+
+class PutAllJobs(webapp2.RequestHandler):
+    def put(self):
+        memcache.delete(GetAllJobs.cachekey)
+        logging.info('put all jobs received')
+        
+        data_string = self.request.body
+        decoded = json.loads(data_string)
+        decoded2 = json.dumps(decoded, indent=2)
+        logging.info(decoded2)
+        
+        if decoded.has_key('jobs'): 
+            count_jobs = len(decoded['jobs'])
+            logging.info('count jobs: '+str(count_jobs))
+            jobs = []
+            for job in decoded['jobs']:
+                temp = Job(key_name=str(job['jobId']))
+                temp.set(job)
+                jobs.append(temp)
+            
+            for job in jobs:
+                job.put()
+                logging.info('put job['+str(job.jobId)+'] into datastore')
+                
       
       
-class PutAll(webapp2.RequestHandler):
+class PutAllVms(webapp2.RequestHandler):
   def put(self):
    
-    logging.info('put all received')
+    logging.info('put all vms received')
    
     data_string = self.request.body
     decoded = json.loads(data_string)
@@ -113,28 +160,21 @@ class PutAll(webapp2.RequestHandler):
         logging.info('count vms: '+str(count_vms))
         vms = []
         for vm in decoded['vms']:
-            ip =  self.request.remote_addr
-            temp = VM(key_name=ip)
+            temp = VM(key_name=vm['ip'])
             temp.set(vm)
-            temp.ip = ip
+            temp.ip = vm['ip']
             vms.append(temp)
         
         for vm in vms:
             vm.put()
             logging.info('put vm['+vm.ip+'] into datastore')
+    
+    else:
+        logging.info('no key vms defined')
+        self.error(500)
+        return
         
-    if decoded.has_key('jobs'): 
-        count_jobs = len(decoded['jobs'])
-        logging.info('count jobs: '+str(count_jobs))
-        jobs = []
-        for job in decoded['jobs']:
-            temp = Job(key_name=str(job['jobId']))
-            temp.set(job)
-            jobs.append(temp)
-        
-        for job in jobs:
-            job.put()
-            logging.info('put job['+str(job.jobId)+'] into datastore')
+
 
 class PutJob(webapp2.RequestHandler):
   def put(self):
@@ -168,13 +208,54 @@ class PutJob(webapp2.RequestHandler):
         
         for job in jobs:
             job.put()
-            logging.info('put job['+str(job.jobId)+'] into datastore')                        
+            logging.info('put job['+str(job.jobId)+'] into datastore')
+            if job.finished:
+                memcache.delete(GetAllJobs.cachekey)
+                logging.info('memcache deleted!!!!')
+
+
+class PutVm(webapp2.RequestHandler):
+    def put(self):
+        
+        logging.info('put single vm received')
+        
+        data_string = self.request.body
+        decoded = json.loads(data_string)
+        decoded2 = json.dumps(decoded, indent=2)
+        
+        logging.info(decoded2)
+       
+        if decoded.has_key('vms'):
+            count_vms = len(decoded['vms'])
+            logging.info('count vms: '+str(count_vms))
+            if count_vms > 1:
+                logging.info("more than 1 vm, abort")
+                self.error(500)
+                return
+            vms = []
+            for vm in decoded['vms']:
+                ip = self.request.remote_addr
+                temp = VM(key_name=ip)
+                temp.set(vm)
+                temp.ip = ip
+                vms.append(temp)
+            
+            for vm in vms:
+                vm.put()
+                logging.info('put vm['+vm.ip+'] into datastore')
+        
+        else:
+            logging.info('no key vms defined')
+            self.error(500)
+            return                  
 
         
 
 app = webapp2.WSGIApplication([('/', MainPage),
-                               ('/put/', PutAll),
+                               ('/put/jobs/', PutAllJobs),
+                               ('/put/vms/', PutAllVms),
                                ('/put/job/', PutJob),
+                               ('/put/vm/', PutVm),
                                ('/get/job/', GetJob),
                                ('/get/vm/', GetVm),
                                ('/get/jobs/', GetAllJobs),
