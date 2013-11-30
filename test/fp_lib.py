@@ -23,7 +23,14 @@ url = 'jcluster12.appspot.com'
 
 
 class Job():
-    def __init__(self, **entries): 
+    def __init__(self, **entries):
+        self.jobId = 0
+        self.vmIp = None
+        self.paraSigma = 0
+        self.paraEA = 0
+        self.running = False
+        self.finished = False
+        self.result = None
         self.__dict__.update(entries)
     
 #    jobId = db.IntegerProperty()
@@ -34,24 +41,25 @@ class Job():
 #    running = db.BooleanProperty()
 #    finished = db.BooleanProperty()
 
-    def getJSON(self):
-        return self.__dict__
-    
+    @staticmethod
+    def serialize(obj):
+        return obj.__dict__
+        
     def __repr__(self):
         return str(self.__dict__)
  
-    def set(self, job):
-        self.jobId = job['jobId']
-        self.vmIp = job['vmIp']
-        self.paraSigma = job['paraSigma']
-        self.paraEA = job['paraEA']
-        self.running = job['running']
-        self.finished = job['finished']
-        self.result = job['result']
+#    def set(self, job):
+#        self.jobId = job['jobId']
+#        self.vmIp = job['vmIp']
+#        self.paraSigma = job['paraSigma']
+#        self.paraEA = job['paraEA']
+#        self.running = job['running']
+#        self.finished = job['finished']
+#        self.result = job['result']
         
         
         
-class VM():
+class VM(dict):
     def __init__(self, **entries): 
         self.__dict__.update(entries)
     
@@ -59,15 +67,16 @@ class VM():
 #    vmtype = db.StringProperty()
 #    dateUpdate = db.DateTimeProperty(auto_now_add=True)
     
-    def getJSON(self):
-        return self.__dict__
-    
+    @staticmethod
+    def serialize(obj):
+        return obj.__dict__
+        
     def __repr__(self):
         return str(self.__dict__)
     
-    def set(self, vm):
-        self.ip = vm['ip']
-        self.vmtype = vm['vmtype']
+#    def set(self, vm):
+#        self.ip = vm['ip']
+#        self.vmtype = vm['vmtype']
 
 
 
@@ -164,21 +173,22 @@ def getNextJob():
     connection.request('GET', '/get/job/')
     result = connection.getresponse()
     data = result.read()
+    job = None
     
     if result.status == 200:
         decoded = json.loads(data)
         if decoded.has_key('jobs'): 
             count_jobs = len(decoded['jobs'])
             print 'count jobs: '+str(count_jobs)
-            for job in decoded['jobs']:
-                temp = Job(**job)
-                print temp
+            for j in decoded['jobs']:
+                job = Job(**j)
+                print job
                 break
     else:
         print "ERROR http status = "+str(result.status)
         
     connection.close()
-    return temp
+    return job
     
     
 def getVMs():
@@ -202,3 +212,32 @@ def getVMs():
         
     connection.close()
     return vms
+
+
+def putJobs(jobs):
+    # HTTP PUT Job's
+    connection =  httplib.HTTPConnection(url)
+    body_content = json.dumps({ 'jobs': jobs}, indent=2, default=Job.serialize)
+    print body_content
+    headers = {"User-Agent": "python-httplib"}
+    connection.request('PUT', '/put/', body_content, headers)
+    result = connection.getresponse()
+    if result.status == 200:
+        print 'PUT jobs OK - HTTP 200'
+    else:
+        print result.status
+    connection.close()
+
+def putVMs(vms):
+    # HTTP PUT VM's
+    connection =  httplib.HTTPConnection(url)
+    body_content = json.dumps({ 'vms': vms}, indent=2, default=VM.serialize)
+    print body_content
+    headers = {"User-Agent": "python-httplib"}
+    connection.request('PUT', '/put/', body_content, headers)
+    result = connection.getresponse()
+    if result.status == 200:
+        print 'PUT vms OK - HTTP 200'
+    else:
+        print result.status
+    connection.close()

@@ -102,6 +102,11 @@ def calibrate_forwardPremium():
         nlc = ev_constr # pass constraints object 
       )
     
+    # testing
+    getJobs()
+    getNextJob()
+    getVMs()
+    
     if True:
         # Initialise population using the arguments passed to the
         # DifferentialEvolutionParallel iniitalization
@@ -109,13 +114,24 @@ def calibrate_forwardPremium():
       
         # This is where the population gets evaluated
         # it is part of the initialization step
-        newVals = forwardPremium(opt.new_pop)
+        #newVals = forwardPremium(opt.new_pop)
       
         # Update iteration count
-        opt.cur_iter += 1
+        opt.cur_iter += 1  #TODO add current iteration  to DB?
+        
+        jobs = []
+        id = 0
+
+        for ex, sig in opt.new_pop:
+            id += 1
+            job = Job(jobId=id,paraEA=ex,paraSigma=sig)
+            jobs.append(job)
+            
+        putJobs(jobs)
       
         # Update population and evaluate convergence
-        opt.update_population(opt.new_pop, newVals)
+        #opt.update_population(opt.new_pop, newVals)
+        sys.exit()
     
     else:
     
@@ -144,8 +160,5 @@ def calibrate_forwardPremium():
         sys.exit()
   
 if __name__ == '__main__':
-    getJobs()
-    getNextJob()
-    getVMs()
     while 1:
         calibrate_forwardPremium()
