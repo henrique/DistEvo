@@ -1,5 +1,7 @@
-application: jcluster12
-version: 1
+application: dist-evo
+
+version: 1-0-0
+
 runtime: python27
 api_version: 1
 threadsafe: true
