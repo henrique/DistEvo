@@ -7,12 +7,12 @@ api_version: 1
 threadsafe: true
 
 handlers:
+- url: /files
+  static_dir: files
+
 - url: /favicon\.ico
   static_files: favicon.ico
   upload: favicon\.ico
 
 - url: /.*
   script: main.app
-
-- url: /files
-  static_dir: files

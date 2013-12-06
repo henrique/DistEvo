@@ -14,11 +14,9 @@ from subprocess import call
 PENALTY_VALUE=10000
 
 
-#### URL #############
+from config import *
+url = server_target
 
-url = 'lsci-12.appspot.com'
-#url = 'jcluster12.appspot.com'
-#url = 'localhost:8080'
 
 print 'Running on', url
 

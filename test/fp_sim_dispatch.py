@@ -9,9 +9,8 @@ import subprocess
 import re
 import random
 
-# URL = 'localhost:8080'
-URL = 'jcluster12.appspot.com'
-#URL = 'lsci-2012.appspot.com'
+from config import *
+URL = server_target
 
 SKEL_INPUT = '/home/henrique/lsci/project/lsci2012/test/input'
 BIN_PATH = '/home/henrique/lsci/project/lsci2012/test'

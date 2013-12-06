@@ -6,8 +6,8 @@ from dispatch import Job
 
 N_JOBS = 10
 
-url = 'jcluster12.appspot.com'
-# url = 'localhost:8080'
+from config import *
+url = server_target
 
 jobs = []
 for i in range(N_JOBS):

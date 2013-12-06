@@ -9,9 +9,8 @@ import subprocess
 import re
 import random
 
-# URL = 'localhost:8080'
-# URL = 'jcluster12.appspot.com'
-URL = 'lsci-12.appspot.com'
+from config import *
+URL = server_target
 
 SKEL_INPUT = '/opt/ifi/input'
 BIN_PATH = '/apps/ifi'

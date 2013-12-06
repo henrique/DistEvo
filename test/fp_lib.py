@@ -15,11 +15,8 @@ from subprocess import call
 PENALTY_VALUE=10000
 
 
-#### URL #############
-# localhost:8080
-# jcluster12.appspot.com
-######################
-url = 'jcluster12.appspot.com'
+from config import *
+url = server_target
 
 
 class Job():

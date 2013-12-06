@@ -4,11 +4,8 @@ from vm import *
 from job import *
 
 
-#### URL #############
-# localhost:8080
-# jcluster12.appspot.com
-######################
-url = 'localhost:8080'
+from config import *
+url = server_target
 
 
 # GET single job test

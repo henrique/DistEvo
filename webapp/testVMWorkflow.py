@@ -8,8 +8,8 @@ from job import *
 # Clean DB first and EXECUTE testPut() before this script!!
 #####################################################################
 
-#url = 'jcluster12.appspot.com'
-url = 'localhost:8080'
+from config import *
+url = server_target
 
 # GET sing vm first
 connection =  httplib.HTTPConnection(url)

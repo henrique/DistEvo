@@ -4,11 +4,9 @@ import random
 from vm import *
 from job import *
 
-#### URL #############
-# localhost:8080
-# jcluster12.appspot.com
-######################
-url = 'localhost:8080'
+from config import *
+url = server_target
+
 YOUR_IP = '127.0.0.1'
 
 N_JOBS = 10
@@ -31,9 +29,9 @@ vms = []
 x = VM()
 y = VM()
 z = VM()
-x.vmtype = 'Amazon'
-y.vmtype = 'Amazon'
-z.vmtype = 'Amazon'
+x.vmtype = 'Test'
+y.vmtype = 'Test'
+z.vmtype = 'Test'
 x.ip = '127.0.0.1'
 y.ip = '192.168.2.2'
 z.ip = '192.168.3.3'
