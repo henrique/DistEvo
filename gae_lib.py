@@ -11,12 +11,13 @@ import socket
 
 from subprocess import call
 
-PENALTY_VALUE=10000
 
+from gae_config import *
+import numpy as np
 
-from config import *
+PENALTY_VALUE=999.9
+
 url = server_target
-
 
 print 'Running on', url
 
@@ -25,14 +26,13 @@ print 'Running on', url
 class Job():
     def __init__(self, **entries):
         self.jobId = 0
+        self.iteration = 0
         self.vmIp = None
-        self.paraSigma = 0
-        self.paraEA = 0
+        self.params = []
+        self.result = None
         self.running = False
         self.finished = False
-        self.result = None
         self.counter = 0
-        self.iteration = 0
         self.__dict__.update(entries)
 
     @staticmethod
@@ -82,7 +82,7 @@ class LocalState():
 
 
 def runApp(ex, sigmax):
-    print "forwardPremiumOut running with EX=%g, sigmaX=%g ..." % (ex, sigmax)
+    print "optimization running with EX=%g, sigmaX=%g ..." % (ex, sigmax)
     # the actual vale should be extracted from the forwardPremium output file 'simulation.out'
     call(["rm", "-rf", "output*", "parameters.in"])
     #call(["mkdir", "output"])
@@ -110,9 +110,9 @@ def runApp(ex, sigmax):
 def pop2Jobs(opt):
     jobs = []
     i = 0
-    for ex, sig in opt.new_pop:
+    for params in opt.new_pop:
         i += 1
-        job = Job(jobId=i, paraEA=ex, paraSigma=sig, iteration=opt.cur_iter+1)
+        job = Job(jobId=i, params=params.tolist(), iteration=opt.cur_iter+1)
         jobs.append(job)
     return jobs
 
@@ -138,9 +138,10 @@ def getJobs():
         else:
             print "ERROR http status = "+str(result.status)
             
-        connection.close()
     except:
         pass
+    finally:
+        connection.close()
     return jobs
     
     
@@ -165,9 +166,10 @@ def getNextJob():
         else:
             print "ERROR http status = "+str(result.status)
             
-        connection.close()
     except:
         pass
+    finally:
+        connection.close()
     return job
     
     
@@ -191,9 +193,10 @@ def getVMs():
         else:
             print "ERROR http status = "+str(result.status)
             
-        connection.close()
     except:
         pass
+    finally:
+        connection.close()
     return vms
 
 
@@ -207,11 +210,14 @@ def putJobs(jobs):
         result = connection.getresponse()
         if result.status == 200:
             print 'PUT jobs OK - HTTP 200'
+            return True
         else:
             print result.status
-        connection.close()
     except:
         pass
+    finally:
+        connection.close()
+    return False
 
 
 def putJob(job):
@@ -224,11 +230,14 @@ def putJob(job):
         result = connection.getresponse()
         if result.status == 200:
             print 'PUT jobs OK - HTTP 200'
+            return True
         else:
             print result.status
-        connection.close()
     except:
         pass
+    finally:
+        connection.close()
+    return False
 
 
 def putVMs(vms):
@@ -241,11 +250,14 @@ def putVMs(vms):
         result = connection.getresponse()
         if result.status == 200:
             print 'PUT vms OK - HTTP 200'
+            return True
         else:
             print result.status
-        connection.close()
     except:
         pass
+    finally:
+        connection.close()
+    return False
 
 def createVMs(popSize):
     return True #TODO
@@ -255,18 +267,17 @@ if __name__ == '__main__':
     #testing
     getJobs()
     getVMs()
-    putJobs([
-        Job(**{'paraSigma': 0.00203506248812, 'finished': False, 'paraEA': 0.826794792732, 'jobId': 1, 'running': False, 'result': None, 'vmIp': None}),
-        Job(**{'paraSigma': 0.00203506248812, 'finished': False, 'paraEA': 0.826794792732, 'jobId': 2, 'running': False, 'result': None, 'vmIp': None})
+    assert putJobs([
+        Job(**{'params': np.random.random_sample(2).tolist(), 'finished': False, 'jobId': 1, 'running': False, 'result': None, 'vmIp': None}),
+        Job(**{'params': np.random.random_sample(2).tolist(), 'finished': False, 'jobId': 2, 'running': False, 'result': None, 'vmIp': None})
         ])
     getJobs()
-    putJobs([
-        Job(**{'paraSigma': 0.00203506248812, 'finished': False, 'paraEA': 0.826794792732, 'jobId': 1, 'iter': 1, 'running': False, 'result': None, 'vmIp': None}),
-        Job(**{'paraSigma': 0.00203506248812, 'finished': False, 'paraEA': 0.826794792732, 'jobId': 2, 'iter': 1, 'result': None, 'vmIp': None})
+    assert putJobs([
+        Job(**{'params': np.random.random_sample(2).tolist(), 'finished': False, 'jobId': 1, 'iter': 1, 'running': False, 'result': None, 'vmIp': None}),
+        Job(**{'params': np.random.random_sample(2).tolist(), 'finished': False, 'jobId': 2, 'iter': 1, 'result': None, 'vmIp': None})
         ])
     getJobs()
-    putJob(
-        Job(**{'paraSigma': 0.00203506248812, 'finished': False, 'paraEA': 0.826794792732, 'jobId': 1, 'running': True, 'result': None, 'vmIp': 'LOCALHOST'})
+    assert putJob(
+        Job(**{'params': np.random.random_sample(2).tolist(), 'finished': False, 'jobId': 1, 'running': True, 'result': None, 'vmIp': 'LOCALHOST'})
         )
-    getJobs()
     getJobs()

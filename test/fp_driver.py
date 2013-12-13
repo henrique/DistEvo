@@ -121,7 +121,7 @@ def calibrate_forwardPremium():
             k = 0
             for job in pop:
                 newVals.append(job.result if job.result != None else PENALTY_VALUE)                
-                opt.new_pop[k,:] = (job.paraEA, job.paraSigma)
+                opt.new_pop[k,:] = (job.params)
                 k += 1
                 
             # Update iteration count

@@ -10,6 +10,7 @@ import re
 import random
 
 from config import *
+from gae_liv import *
 URL = server_target
 
 SKEL_INPUT = '/opt/ifi/input'
@@ -163,37 +164,7 @@ def get_unique_job(url):
     return None
 
 def get_parameters_in(job):
-    return """group | name | value
-algo | T                   | 100
-algo | convCrit            | 1e-6
-algo | newPolicyFlag       | 1
-algo | storeStartingPoints | 0
-algo | nSimulations        | 1e6
-sspa | wGridSize           | 11
-econ | gamma               | 2
-econ | beta                | 0.99
-econ | alphaA              | 0.5
-econ | alphaB              | 0.5
-econ | b1Abar              | -1
-econ | b2Abar              | -1
-econ | b1Bbar              | -1
-econ | b2Bbar              | -1
-econ | wBar                | -0.100
-econ | wGridBar            | -0.100
-hbit | EA                  | %f
-hbit | EB                  | %f
-hbit | sigmaA              | %f
-hbit | sigmaB              | %f
-hbit | gridScaleA          | 1
-hbit | gridScaleB          | 1
-hbit | gridSizeA           | 3
-hbit | gridSizeB           | 3
-algo | simulOnly           | 0
-algo | policPlot           | 0
-algo | simulPlot           | 0
-algo | makeSav             | 0
-algo | simulWealth0        | 0
-""" % (job.paraEA, job.paraEA, job.paraSigma, job.paraSigma)
+    return (job.params)
 
 def create_workenv(job):
     w = str(job.jobId)

@@ -4,12 +4,14 @@ import time
 import numpy as np
 import datetime
 
-from gc3libs.optimizer.dif_evolution import DifferentialEvolutionParallel
-from fp_lib import *
-from fp_ec2 import *
+import gc3libs
+from gc3libs import Application, configure_logger
+from gc3libs.optimizer.dif_evolution import DifferentialEvolutionAlgorithm
+from gc3libs.optimizer import draw_population
+from gae_lib import *
 
-POPULATION_SIZE=100 #TODO 100
-N_NODES=10
+POPULATION_SIZE=5 #TODO 100
+# N_NODES=10
 
 class nlcOne4eachPair():
     def __init__(self, lower_bds, upper_bds):
@@ -47,35 +49,54 @@ class nlcOne4eachPair():
 
         return c
 
-def calibrate_forwardPremium():
+def drive_optimization():
     """
-    Drver script to calibrate forwardPremium EX and sigmaX parameters.
-    It uses DifferentialEvolutionParallel as an implementation of
+    Driver script
+    It uses DifferentialEvolutionAlgorithm as an implementation of
     Ken Price's differential evolution
     algorithm: [[http://www1.icsi.berkeley.edu/~storn/code.html]].
     """
 
     dim = 2 # the population will be composed of 2 parameters to  optimze: [ EX, sigmaX ]
-    lower_bounds = [0.5,0.001] # Respectivaly for [ EX, sigmaX ]
-    upper_bounds = [1,0.01]  # Respectivaly for [ EX, sigmaX ]
-    y_conv_crit = 0.98 # convergence treshold; stop when the evaluated output function y_conv_crit
+    lower_bounds = np.array([0.5, 0.001]) # Respectivaly for [ EX, sigmaX ]
+    upper_bounds = np.array([1, 0.01])  # Respectivaly for [ EX, sigmaX ]
+    y_conv_crit = 1e-5 # convergence treshold; stop when the evaluated output function y_conv_crit
 
-    # define constraints
-    ev_constr = nlcOne4eachPair(lower_bounds, upper_bounds)
+#     # define constraints
+#     ev_constr = nlcOne4eachPair(lower_bounds, upper_bounds)
+# 
+#     opt = DifferentialEvolutionAlgorithm(
+#         dim = dim,          # number of parameters of the objective function
+#         lower_bds = lower_bounds,
+#         upper_bds = upper_bounds,
+#         pop_size = POPULATION_SIZE,   # number of population members
+#         de_step_size = 0.85,# DE-stepsize ex [0, = 100 2]
+#         prob_crossover = 1, # crossover probabililty constant ex [0, 1]
+#         itermax = 20,      # maximum number of iterations (generations)
+#         x_conv_crit = None, # stop when variation among x's is < this
+#         y_conv_crit = y_conv_crit, # stop when ofunc < y_conv_crit
+#         de_strategy = 'DE_local_to_best',
+#         nlc = ev_constr # pass constraints object
+#       )
+    configure_logger(level=logging.CRITICAL)
+    log = logging.getLogger("gc3.gc3libs")  
+#     initial_pop = draw_population(lower_bds=lower_bounds, upper_bds=upper_bounds, size=POPULATION_SIZE, dim=dim)
 
-    opt = DifferentialEvolutionParallel(
-        dim = dim,          # number of parameters of the objective function
-        lower_bds = lower_bounds,
-        upper_bds = upper_bounds,
-        pop_size = POPULATION_SIZE,   # number of population members
+    def _default_in_domain(pop):
+        return pop < upper_bounds and pop > lower_bounds
+ 
+    
+    opt = DifferentialEvolutionAlgorithm(
+        initial_pop = np.zeros( (POPULATION_SIZE, dim) ),
         de_step_size = 0.85,# DE-stepsize ex [0, 2]
         prob_crossover = 1, # crossover probabililty constant ex [0, 1]
-        itermax = 20,      # maximum number of iterations (generations)
-        x_conv_crit = None, # stop when variation among x's is < this
-        y_conv_crit = y_conv_crit, # stop when ofunc < y_conv_crit
+        itermax = 5,      # maximum number of iterations (generations)
+        dx_conv_crit = None, # stop when variation among x's is < this
+        y_conv_crit = None, # stop when ofunc < y_conv_crit
         de_strategy = 'DE_local_to_best',
-        nlc = ev_constr # pass constraints object
-      )
+        logger = log,
+        )
+    opt.vals = np.ones(POPULATION_SIZE)*sys.float_info.max #init
 
     try:
         tmp = LocalState.load("driver", opt)
@@ -89,7 +110,7 @@ def calibrate_forwardPremium():
     if not pop: # empty
         # Initialise population using the arguments passed to the
         # DifferentialEvolutionParallel iniitalization
-        opt.new_pop = opt.draw_initial_sample()
+        opt.new_pop = draw_population(lower_bds=lower_bounds, upper_bds=upper_bounds, size=POPULATION_SIZE, dim=dim)
 
         putJobs(pop2Jobs(opt))
 
@@ -102,56 +123,58 @@ def calibrate_forwardPremium():
 
         if finished:
             # Update population and evaluate convergence
-            newVals = []
+            newVals = np.zeros(POPULATION_SIZE)
             opt.new_pop = np.zeros( (POPULATION_SIZE, dim) )
             k = 0
             for job in pop:
-                newVals.append(job.result if job.result != None else PENALTY_VALUE)
-                opt.new_pop[k,:] = (job.paraEA, job.paraSigma)
+                opt.new_pop[k,:] = job.params
+                newVals[k] = (job.result if job.result != None else PENALTY_VALUE)
                 k += 1
 
             # Update iteration count
 #            global cur_iter, bestval
-            opt.cur_iter += 1
+#             opt.cur_iter += 1
 #            opt.cur_iter = cur_iter
 #            opt.bestvtest/fp_lib.pyal = bestval #!!!
 #            opt.vals = newVals #!!!
 #            opt.pop = opt.new_pop #!!!
 
-            opt.update_population(opt.new_pop, newVals)
+            opt.update_opt_state(opt.new_pop, newVals)
 #            bestval = opt.bestval #!!!
 
             if not opt.has_converged():
                 # Generate new population and enforce constrains
-                opt.new_pop = opt.enforce_constr_re_evolve(opt.modify(opt.pop))
-
+#                 opt.new_pop = opt.enforce_constr_re_evolve(opt.modify(opt.pop)) TODO!!!!
+                opt.new_pop = opt.evolve()
+                
                 # Push and run again!
                 putJobs(pop2Jobs(opt))
-
+                print [opt.best_y, opt.best_x]
+                
             else:
                 # Once iteration has terminated, extract `bestval` which should represent
                 # the element in *all* populations that lead to the closest match to the
                 # empirical value
-                EX_best, sigmaX_best = opt.best
 
-                print "Calibration converged after [%d] steps. EX_best: %f, sigmaX_best: %f" % (opt.cur_iter, EX_best, sigmaX_best)
+                print "Calibration converged after [%d] steps. " % (opt.cur_iter)
+                print [opt.best_y, opt.best_x]
                 # TODO: Cleanup
                 sys.exit()
 
 
-    # VM's: create and manage dispatchers
-    vms = getVMs()
-
-    if not vms: # empty
-        print "[+] No running EC2 instances found, creating %d" % N_NODES
-        nodes = fp_ec2_create_vms(N_NODES, pubkey_file='/home/tklauser/.ssh/id_rsa.pub')
-        vms = []
-        for node in nodes:
-            vm = { 'ip' : node.public_ips[0], 'vmtype' : 'Amazon', 'dateUpdate' : str(datetime.datetime.now()) }
-            vms.append(vm)
-        putVMs(vms)
-    else:
-        pass  #TODO manage VMs
+#     # VM's: create and manage dispatchers
+#     vms = getVMs()
+# 
+#     if not vms: # empty
+#         print "[+] No running EC2 instances found, creating %d" % N_NODES
+#         nodes = fp_ec2_create_vms(N_NODES, pubkey_file='/home/tklauser/.ssh/id_rsa.pub')
+#         vms = []
+#         for node in nodes:
+#             vm = { 'ip' : node.public_ips[0], 'vmtype' : 'Amazon', 'dateUpdate' : str(datetime.datetime.now()) }
+#             vms.append(vm)
+#         putVMs(vms)
+#     else:
+#         pass  #TODO manage VMs
 
     # Then, we could also run the forwardPremium binary here; Single script solution
 
@@ -159,5 +182,5 @@ def calibrate_forwardPremium():
 
 if __name__ == '__main__':
     while 1:
-        calibrate_forwardPremium()
+        drive_optimization()
         time.sleep(5)

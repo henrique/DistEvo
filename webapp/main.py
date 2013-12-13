@@ -1,6 +1,7 @@
 import webapp2
 import logging
 import json
+import time
 from google.appengine.ext import db
 from google.appengine.api import memcache
 from vm import *
@@ -249,6 +250,33 @@ class PutVm(webapp2.RequestHandler):
             self.error(500)
             return                  
 
+class bulkdelete(webapp2.RequestHandler):
+    def get(self):
+        self.response.headers['Content-Type'] = 'text/plain'
+        
+        try:
+            while True:
+                q = db.GqlQuery("SELECT __key__ FROM Job")
+                if q.count() <= 0: break
+                db.delete(q.fetch(200))
+                time.sleep(0.2)
+        except Exception, e:
+            self.response.out.write(repr(e)+'\n')
+            pass
+        memcache.delete(GetAllJobs.cachekey)
+        logging.info('memcache deleted!!!!')
+        
+        try:
+            while True:
+                q = db.GqlQuery("SELECT __key__ FROM VM")
+                if q.count() <= 0: break
+                db.delete(q.fetch(200))
+                time.sleep(0.2)
+        except Exception, e:
+            self.response.out.write(repr(e)+'\n')
+            pass
+        
+        self.response.out.write('Done!\n ' + time.strftime("%a, %d %b %Y %H:%M:%S +0000"))
         
 
 app = webapp2.WSGIApplication([('/', MainPage),
@@ -259,7 +287,8 @@ app = webapp2.WSGIApplication([('/', MainPage),
                                ('/get/job/', GetJob),
                                ('/get/vm/', GetVm),
                                ('/get/jobs/', GetAllJobs),
-                               ('/get/vms/', GetAllVms)],
+                               ('/get/vms/', GetAllVms),
+                               ('/admin/i_really_want_to_delete_everything', bulkdelete)],
                               debug=True)
 
 # APP STARTUP - INIT DB

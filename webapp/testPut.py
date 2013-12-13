@@ -1,8 +1,8 @@
 import httplib
 import json
-import random
-from vm import *
-from job import *
+import numpy as np
+from vm import VM
+from job import Job
 
 from config import *
 url = server_target
@@ -18,8 +18,7 @@ for i in range(N_JOBS):
     job = Job()
     job.jobId = i
     job.iteration = 1
-    job.paraEA = random.uniform(0.5, 1.0)
-    job.paraSigma = random.uniform(0.001, 0.01)
+    job.params = np.random.random_sample(2).tolist()
     job.running = False
     job.finished = False
     jobs.append(job)

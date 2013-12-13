@@ -2,7 +2,7 @@ import httplib
 import json
 import random
 
-from dispatch import Job
+from dispatcher import Job
 
 N_JOBS = 10
 
