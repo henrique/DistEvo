@@ -10,15 +10,13 @@ from gc3libs.optimizer.dif_evolution import DifferentialEvolutionAlgorithm
 from gc3libs.optimizer import draw_population
 from gae_lib import *
 
-POPULATION_SIZE=5 #TODO 100
-# N_NODES=10
 
 
-def drive_optimization(dim, lower_bounds, upper_bounds,
+def drive_optimization(population_size, dim, lower_bounds, upper_bounds,
                  # DE-specific parameters
                  de_strategy = 'DE_local_to_best', de_step_size = 0.85, prob_crossover = 1.0, exp_cross = False,
                  # converge-related parameters
-                 itermax = 100, dx_conv_crit = None, y_conv_crit = None,
+                 itermax = 100, dx_conv_crit = 1e-6, y_conv_crit = None,
                  # misc
                  in_domain=None, seed=None, logger=None, after_update_opt_state=[]):
     """
@@ -39,7 +37,7 @@ def drive_optimization(dim, lower_bounds, upper_bounds,
  
     
     opt = DifferentialEvolutionAlgorithm(
-        initial_pop = np.zeros( (POPULATION_SIZE, dim) ),
+        initial_pop = np.zeros( (population_size, dim) ),
         de_step_size = de_step_size,# DE-stepsize ex [0, 2]
         prob_crossover = prob_crossover, # crossover probabililty constant ex [0, 1]
         itermax = itermax,      # maximum number of iterations (generations)
@@ -49,7 +47,7 @@ def drive_optimization(dim, lower_bounds, upper_bounds,
         logger = logger,
         in_domain = in_domain,
         )
-    opt.vals = np.ones(POPULATION_SIZE)*sys.float_info.max #init
+    opt.vals = np.ones(population_size)*sys.float_info.max #init
 
     try:
         tmp = LocalState.load("driver", opt)
@@ -63,21 +61,23 @@ def drive_optimization(dim, lower_bounds, upper_bounds,
     if not pop: # empty
         # Initialise population using the arguments passed to the
         # DifferentialEvolutionParallel iniitalization
-        opt.new_pop = draw_population(lower_bds=lower_bounds, upper_bds=upper_bounds, size=POPULATION_SIZE, dim=dim)
+        opt.new_pop = draw_population(lower_bds=lower_bounds, upper_bds=upper_bounds, size=population_size, dim=dim)
 
         putJobs(pop2Jobs(opt))
 
     else: # finished?
-        finished = True
+        finished, count = True, 0
         for job in pop:
             finished &= job.finished
+            count += job.finished
 #            if job.iteration > opt.cur_iter:  #restore current iteration counter
 #                opt.cur_iter = job.iteration
+        print "%d finished jobs" % (count)
 
         if finished:
             # Update population and evaluate convergence
-            newVals = np.zeros(POPULATION_SIZE)
-            opt.new_pop = np.zeros( (POPULATION_SIZE, dim) )
+            newVals = np.zeros(population_size)
+            opt.new_pop = np.zeros( (population_size, dim) )
             k = 0
             for job in pop:
                 opt.new_pop[k,:] = job.params
@@ -93,26 +93,21 @@ def drive_optimization(dim, lower_bounds, upper_bounds,
 #            opt.pop = opt.new_pop #!!!
 
             opt.update_opt_state(opt.new_pop, newVals)
-#            bestval = opt.bestval #!!!
 
             if not opt.has_converged():
                 # Generate new population and enforce constrains
-#                 opt.new_pop = opt.enforce_constr_re_evolve(opt.modify(opt.pop)) TODO!!!!
                 opt.new_pop = opt.evolve()
                 
                 # Push and run again!
                 putJobs(pop2Jobs(opt))
-                print [opt.best_y, opt.best_x]
                 
             else:
                 # Once iteration has terminated, extract `bestval` which should represent
                 # the element in *all* populations that lead to the closest match to the
                 # empirical value
-
                 print "Calibration converged after [%d] steps. " % (opt.cur_iter)
-                print [opt.best_y, opt.best_x]
-                # TODO: Cleanup
-                sys.exit()
+            
+            print [opt.best_y, opt.best_x]
 
 
 #     # VM's: create and manage dispatchers
@@ -137,11 +132,10 @@ def drive_optimization(dim, lower_bounds, upper_bounds,
 
 # test driver
 if __name__ == '__main__':
-    dim = 2 # the population will be composed of 2 parameters to  optimze: [ EX, sigmaX ]
-    lower_bounds = np.array([0.5, 0.001]) # Respectivaly for [ EX, sigmaX ]
-    upper_bounds = np.array([1, 0.01])  # Respectivaly for [ EX, sigmaX ]
-    dx_conv_crit = 1e-5 # convergence treshold; stop when the evaluated output function y_conv_crit
+    dim = 2 # the population will be composed of 2 parameters to  optimize
+    lower_bounds = np.array([0.5, 0.001])
+    upper_bounds = np.array([1, 0.01])
     
     while 1:
-        drive_optimization(dim=dim, lower_bounds=lower_bounds, upper_bounds=upper_bounds, dx_conv_crit=dx_conv_crit)
+        drive_optimization(population_size=5, dim=dim, lower_bounds=lower_bounds, upper_bounds=upper_bounds)
         time.sleep(5)
