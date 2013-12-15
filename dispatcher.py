@@ -1,12 +1,7 @@
 #!/usr/bin/env python
 
-import os, sys
-import datetime, time
-import httplib, json
+import time
 import multiprocessing
-import shutil
-import subprocess
-import re
 import random
 
 from config import *
@@ -18,6 +13,7 @@ NCORES = multiprocessing.cpu_count()
 class Dispatcher():
     def __init__(self, eval_func):
         self.eval_func = eval_func
+        self.pool = multiprocessing.Pool(processes=NCORES)  # start worker processes
         
     def get_parameters_in(self, job):
         return job.params
@@ -41,11 +37,22 @@ class Dispatcher():
     
     def call_evaluation(self, job):
         print "[+] Running job %d" % (job.jobId)
-        job.proc = self.eval_func(job)
+#         p = multiprocessing.Process(target=self.eval_func, args=job)
+#         p.start()
+#         job.proc = p
+        
+        if sys.flags.debug:
+            job.proc = self.eval_func(job.params)
+        else:
+            job.proc = self.pool.apply_async(self.eval_func, [job.params])
+        
     
     
     def gather_results(self, job):
-        return job.proc
+        if sys.flags.debug:
+            return job.proc
+        else:
+            return job.proc.get(timeout=1)
     
     
     
@@ -88,15 +95,17 @@ class Dispatcher():
             print "[+] Checking job states (%d/%d running)" % (len(jobs), NCORES)
             for job in jobs:
                 # Check if the job terminated
-                if job.proc is not None:
+                if sys.flags.debug or job.proc.ready():
                     job.running = False
                     job.finished = True
                     job.result = PENALTY_VALUE  # gets updated by gather_results
     
 #                     if rc == 0:
                     job.result = self.gather_results(job)
+                    job.proc = None
+                    print job
                     if putJob(job):
-                        print "[+] Successfully completed job %d (FFB=%f)" % (job.jobId, job.result)
+                        print "[+] Successfully completed job %d (return=%f)" % (job.jobId, job.result)
 #                         shutil.rmtree(str(job.jobId))
                         jobs.remove(job)
                     else:
@@ -120,9 +129,9 @@ class Dispatcher():
 
 
 # test dispatcher
-def test_evaluation(job):
-    time.sleep(0.2)
-    return sum(job.params) #will look for the smallest arg sum
+def test_evaluation(params):
+    time.sleep(5)
+    return sum(params) #will look for the smallest arg sum
 
 if __name__ == '__main__':
     Dispatcher(test_evaluation).main()
