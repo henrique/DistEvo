@@ -24,16 +24,17 @@ class GetJob(webapp2.RequestHandler):
         q = Job.all()
         q.filter("running =", False)
         q.filter("finished =", False)
-        q.filter("counter <", 1)
+        q.filter("counter <", 2) #redundancy level
+        q.order("counter")
         job = q.get()
         if job == None:
-            logging.info('no not running job found that was not requested already, abort')
+            logging.info('no not-running job found that was not requested already, abort')
             self.error(500)
             return
         
         l = { 'jobs': [job.getJSON()]}
         content = json.dumps(l, indent=2)
-        logging.info(content)
+        logging.info(job.jobId)
         self.response.out.write(content)
         # increment job counter
         job.counter += 1
@@ -57,7 +58,7 @@ class GetVm(webapp2.RequestHandler):
         
         l = { 'vms': [vm.getJSON()]}
         content = json.dumps(l, indent=2)
-        logging.info(content)
+        # logging.info(content)
         self.response.out.write(content)
        
         
@@ -72,7 +73,7 @@ class GetAllJobs(webapp2.RequestHandler):
             if memcache.set(self.cachekey, data, 300): #5min
                 logging.info("adding to cache: " + self.cachekey)
         
-        logging.info(data)
+        # logging.info(data)
         self.response.out.write(data)
     
     
@@ -142,6 +143,12 @@ class PutAllJobs(webapp2.RequestHandler):
             for job in jobs:
                 job.put()
                 logging.info('put job['+str(job.jobId)+'] into datastore')
+            
+            email = self.request.get("email")
+            if email:
+                logging.info(email)
+                from google.appengine.api import mail
+                mail.send_mail(sender=email, to=email, subject="New iteration started", body=data_string)
                 
       
       
@@ -179,17 +186,17 @@ class PutAllVms(webapp2.RequestHandler):
 
 class PutJob(webapp2.RequestHandler):
   def put(self):
-      
     logging.info('put single job received')
     data_string = self.request.body
+    logging.info(data_string)
     decoded = json.loads(data_string)
     if decoded.has_key('jobs'): 
         count_jobs = len(decoded['jobs'])
-        logging.info('count jobs: '+str(count_jobs))
         if count_jobs > 1:
             logging.info("more than 1 job, abort")
             self.error(500)
             return
+        
         jobs = []
         for job in decoded['jobs']:
             temp = Job(key_name=str(job['jobId']))
@@ -199,11 +206,14 @@ class PutJob(webapp2.RequestHandler):
             q = Job.all()
             q.filter("jobId =", temp.jobId)
             result = q.get()
-            if result.running == True:
-                if result.vmIp != self.request.remote_addr:
-                    logging.info('job already running from other vm, abort')
-                    self.error(500)
-                    return
+#                 if result.vmIp != self.request.remote_addr:
+#                     logging.info('job already running from other vm, abort')
+#                     self.error(500)
+#                     return
+            if not result.running or result.finished:
+                continue #skip job
+            if result.iteration != temp.iteration:
+                continue #skip job
             temp.vmIp = self.request.remote_addr
             jobs.append(temp)
         
