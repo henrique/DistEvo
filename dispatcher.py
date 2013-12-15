@@ -15,8 +15,6 @@ URL = server_target
 
 NCORES = multiprocessing.cpu_count()
 
-R_FAMA_FRENCH_BETA = re.compile(r"^FamaFrenchBeta:\s*(.*)$")
-
 class Dispatcher():
     def __init__(self, eval_func):
         self.eval_func = eval_func
@@ -68,7 +66,8 @@ class Dispatcher():
     
         while True:
             jobs = self.run(jobs)
-            time.sleep(random.randrange(5, 10))
+            time.sleep(0.1)
+            
     
     
     
@@ -78,6 +77,8 @@ class Dispatcher():
                 job = getNextJob()
                 if job == None:
                     print "[-] No new job found, waiting..."
+                    # wait between 5 and 15 seconds to prevent several VMs from accessing GAE simultaneously
+                    time.sleep(random.randrange(5, 15))
                 else:
                     print "[+] Got eligible job with ID %d" % job.jobId
                     self.create_workenv(job)
@@ -115,13 +116,13 @@ class Dispatcher():
     
     #        gae_put_vm(URL, vm)
     
-            # wait between 5 and 10 seconds to prevent several VMs from accessing GAE simultaneously
             return jobs
 
 
+# test dispatcher
 def test_evaluation(job):
     time.sleep(0.2)
-    return sum(job.params)
+    return sum(job.params) #will look for the smallest arg sum
 
 if __name__ == '__main__':
     Dispatcher(test_evaluation).main()
