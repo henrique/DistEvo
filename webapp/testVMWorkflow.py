@@ -8,7 +8,7 @@ from job import *
 # Clean DB first and EXECUTE testPut() before this script!!
 #####################################################################
 
-from config import *
+from gae_config import *
 url = server_target
 
 # GET sing vm first

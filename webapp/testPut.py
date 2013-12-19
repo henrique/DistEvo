@@ -4,7 +4,7 @@ import numpy as np
 from vm import VM
 from job import Job
 
-from config import *
+from gae_config import *
 url = server_target
 
 YOUR_IP = '127.0.0.1'

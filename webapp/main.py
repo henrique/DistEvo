@@ -21,12 +21,7 @@ class GetJob(webapp2.RequestHandler):
         logging.info("get single job received")
         
         # GET a not running& not finished& not requested job from DB
-        q = Job.all()
-        q.filter("running =", False)
-        q.filter("finished =", False)
-        q.filter("counter <", 2) #redundancy level
-        q.order("counter")
-        job = q.get()
+        job = Job.getNext()
         if job == None:
             logging.info('no not-running job found that was not requested already, abort')
             self.error(500)

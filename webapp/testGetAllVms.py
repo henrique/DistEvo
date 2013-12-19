@@ -4,7 +4,7 @@ from vm import *
 from job import *
 
 
-from config import *
+from gae_config import *
 url = server_target
 
 
