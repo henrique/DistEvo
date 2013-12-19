@@ -205,7 +205,7 @@ class PutJob(webapp2.RequestHandler):
 #                     logging.info('job already running from other vm, abort')
 #                     self.error(500)
 #                     return
-            if not result.running or result.finished:
+            if result.finished: #not result.running or 
                 continue #skip job
             if result.iteration != temp.iteration:
                 continue #skip job

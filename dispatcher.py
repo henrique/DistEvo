@@ -42,9 +42,9 @@ class Dispatcher():
 #         job.proc = p
         
         if sys.flags.debug:
-            job.proc = self.eval_func(job.params)
+            job.proc = self.eval_func(job.jobId, job.params)
         else:
-            job.proc = self.pool.apply_async(self.eval_func, [job.params])
+            job.proc = self.pool.apply_async(self.eval_func, [job.jobId, job.params])
         
     
     
@@ -129,7 +129,7 @@ class Dispatcher():
 
 
 # test dispatcher
-def test_evaluation(params):
+def test_evaluation(id, params):
     time.sleep(5)
     return sum(params) #will look for the smallest arg sum
 
