@@ -70,9 +70,9 @@ def drive_optimization(population_size, dim, lower_bounds, upper_bounds,
         for job in pop:
             finished &= job.finished
             count += job.finished
-#            if job.iteration > opt.cur_iter:  #restore current iteration counter
-#                opt.cur_iter = job.iteration
-        print "%d finished jobs" % (count)
+
+        cur_iter = job.iteration-1
+        print "Iter(%d): %d finished jobs" % (cur_iter, count)
 
         if finished:
             # Update population and evaluate convergence
@@ -93,6 +93,7 @@ def drive_optimization(population_size, dim, lower_bounds, upper_bounds,
 #            opt.pop = opt.new_pop #!!!
 
             opt.update_opt_state(opt.new_pop, newVals)
+            opt.cur_iter = cur_iter + 1 #restore current iteration counter
 
             if not opt.has_converged():
                 # Generate new population and enforce constrains
