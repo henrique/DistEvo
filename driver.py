@@ -55,8 +55,13 @@ def drive_optimization(population_size, dim, lower_bounds, upper_bounds,
     except:
         print 'Nothing to be loaded...'
 
-    # Jobs: create and manage population
-    pop = getJobs()
+    ## Jobs: create and manage population
+    
+    try:
+        pop = getJobs(throw=True)
+    except Exception as ex: #server error
+        print ex
+        return
 
     if not pop: # empty
         # Initialise population using the arguments passed to the
@@ -65,7 +70,8 @@ def drive_optimization(population_size, dim, lower_bounds, upper_bounds,
 
         putJobs(pop2Jobs(opt))
 
-    else: # finished?
+    else:
+        # finished?
         finished, count = True, 0
         for job in pop:
             finished &= job.finished
@@ -96,6 +102,8 @@ def drive_optimization(population_size, dim, lower_bounds, upper_bounds,
             opt.cur_iter = cur_iter + 1 #restore current iteration counter
 
             if not opt.has_converged():
+                print [opt.best_y, opt.best_x]
+                
                 # Generate new population and enforce constrains
                 opt.new_pop = opt.evolve()
                 
@@ -107,8 +115,9 @@ def drive_optimization(population_size, dim, lower_bounds, upper_bounds,
                 # the element in *all* populations that lead to the closest match to the
                 # empirical value
                 print "Calibration converged after [%d] steps. " % (opt.cur_iter)
+                print [opt.best_y, opt.best_x]
+                sys.exit()
             
-            print [opt.best_y, opt.best_x]
 
 
 #     # VM's: create and manage dispatchers
@@ -138,5 +147,5 @@ if __name__ == '__main__':
     upper_bounds = np.array([1, 0.01])
     
     while 1:
-        drive_optimization(population_size=5, dim=dim, lower_bounds=lower_bounds, upper_bounds=upper_bounds)
+        drive_optimization(population_size=25, dim=dim, lower_bounds=lower_bounds, upper_bounds=upper_bounds)
         time.sleep(5)

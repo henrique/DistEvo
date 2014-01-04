@@ -80,22 +80,24 @@ class Dispatcher():
     
     def run(self, jobs):
             # Core with nothing to do -> get a new job
-            if len(jobs) < NCORES:
+            while len(jobs) < NCORES:
                 job = getNextJob()
                 if job == None:
                     print "[-] No new job found, waiting..."
                     # wait between 5 and 15 seconds to prevent several VMs from accessing GAE simultaneously
                     time.sleep(random.randrange(5, 15))
+                    break
                 else:
                     print "[+] Got eligible job with ID %d" % job.jobId
+                    job.time = time.time()
                     self.create_workenv(job)
                     self.call_evaluation(job)
                     jobs.append(job)
     
-            print "[+] Checking job states (%d/%d running)" % (len(jobs), NCORES)
+            print "[+] %s Checking job states (%d/%d running)" % (time.strftime("%H:%M:%S"), len(jobs), NCORES)
             for job in jobs:
                 # Check if the job terminated
-                if sys.flags.debug or job.proc.ready():
+                if sys.flags.debug or job.proc.ready(): #synchronous in debugging mode
                     job.running = False
                     job.finished = True
                     job.result = PENALTY_VALUE  # gets updated by gather_results
@@ -105,11 +107,12 @@ class Dispatcher():
                     job.proc = None
                     print job
                     if putJob(job):
-                        print "[+] Successfully completed job %d (return=%f)" % (job.jobId, job.result)
+                        print "[+] Successfully completed job %d (return=%f, time=%f)" % (job.jobId, job.result, time.time()-job.time)
 #                         shutil.rmtree(str(job.jobId))
                         jobs.remove(job)
                     else:
                         print "[E] Failed to submit completed job to GAE, trying again later"
+                        time.sleep(random.randrange(1, 5))
 #                     else:
 #                         print "[E] Job %d terminated with code %d" % (job.jobId, rc)
 #                         print "[E] stderr:"
@@ -130,7 +133,7 @@ class Dispatcher():
 
 # test dispatcher
 def test_evaluation(id, params):
-    time.sleep(5)
+    time.sleep(.2)
     return sum(params) #will look for the smallest arg sum
 
 if __name__ == '__main__':

@@ -117,7 +117,7 @@ def pop2Jobs(opt):
     return jobs
 
 
-def getJobs():
+def getJobs(throw=False):
     # GET  jobs
     jobs = []
     try:
@@ -136,10 +136,13 @@ def getJobs():
                     jobs.append(temp)
 #                    print job
         else:
-            print "ERROR http status = "+str(result.status)
+            raise Exception("ERROR http status = "+str(result.status))
             
-    except:
-        pass
+    except Exception as ex:
+        if throw:
+            raise ex
+        else:
+            print ex
     finally:
         connection.close()
     return jobs
