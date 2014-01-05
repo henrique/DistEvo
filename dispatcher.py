@@ -99,6 +99,12 @@ class Dispatcher():
                     
             print "[+] %s Checking job states (%d/%d running)" % (time.strftime("%H:%M:%S"), len(jobs), NCORES)
             for job in jobs:
+                if job.proc is None:
+                    print "[E] No process information!"
+                    print job
+                    jobs.remove(job)
+                    continue
+                    
                 # Check if the job terminated
                 if sys.flags.debug or job.proc.ready(): #synchronous in debugging mode
                     job.running = False
@@ -107,12 +113,13 @@ class Dispatcher():
                     
                     job.result = self.gather_results(job)
                     if job.result is not None:
-                        job.proc = None
+                        proc, job.proc = job.proc, None #temporally store proc
                         print job
                         if putJob(job):
                             print "[+] Successfully completed job %d (return=%f, time=%f)" % (job.jobId, job.result, time.time()-job.time)
                             jobs.remove(job)
                         else:
+                            job.proc = proc
                             print "[E] Failed to submit completed job to GAE, trying again later"
                             time.sleep(random.randrange(1, 5))
                             
@@ -121,8 +128,10 @@ class Dispatcher():
 
 # test dispatcher
 def test_evaluation(id, params):
-    time.sleep(.2)
-    return sum(params) #will look for the smallest arg sum
+    """The Rosenbrock function"""
+    time.sleep(.1)
+    x = np.array(params)
+    return sum(100.0*(x[1:]-x[:-1]**2.0)**2.0 + (1-x[:-1])**2.0)
 
 if __name__ == '__main__':
     Dispatcher(test_evaluation).main()

@@ -143,9 +143,9 @@ def drive_optimization(population_size, dim, lower_bounds, upper_bounds,
 # test driver
 if __name__ == '__main__':
     dim = 2 # the population will be composed of 2 parameters to  optimize
-    lower_bounds = np.array([0.5, 0.001])
-    upper_bounds = np.array([1, 0.01])
+    lower_bounds = np.array([0.0, 0.0])
+    upper_bounds = np.array([2.0, 2.0])
     
     while 1:
-        drive_optimization(population_size=25, dim=dim, lower_bounds=lower_bounds, upper_bounds=upper_bounds)
-        time.sleep(5)
+        drive_optimization(population_size=8, dim=dim, lower_bounds=lower_bounds, upper_bounds=upper_bounds)
+        time.sleep(2)
