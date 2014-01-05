@@ -1,7 +1,12 @@
 from google.appengine.ext import db
-import json
+import time, logging
+
+currentIteration = db.Model(key_name='curr')
 
 class Job(db.Model):
+    _redundancyLevel = 1
+    _redundancyTimer = None
+    _redundancyTimeout = 900 #15min
     
     jobId = db.IntegerProperty()
     iteration = db.IntegerProperty()
@@ -47,12 +52,28 @@ class Job(db.Model):
 
 
     @staticmethod
+    @db.transactional(xg=True)
     def getNext():
-        """ GET a not running& not finished& not requested job from DB """
-        q = Job.all()
+        """ GET a not running, not finished, and not yet requested job from DB """
+        q = Job.all().ancestor(currentIteration)
         q.filter("running =", False)
         q.filter("finished =", False)
-        q.filter("counter <", 2) #redundancy level
+        q.filter("counter <", Job._redundancyLevel) #redundancy level
         q.order("counter")
-        return q.get()
+        job = q.get()
+        
+        if job is not None:
+            # increment job counter
+            job.counter += 1
+            job.put()
+            Job._redundancyLevel = job.counter #reset
+        else:
+            if Job._redundancyTimer is None:
+                Job._redundancyTimer = time.time()
+            elif time.time() - Job._redundancyTimer > Job._redundancyTimeout:
+                Job._redundancyTimer = None
+                Job._redundancyLevel += 1
+                logging.info('New job redundancy level: %d', Job._redundancyLevel)
+            
+        return job
 

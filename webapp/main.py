@@ -22,7 +22,7 @@ class GetJob(webapp2.RequestHandler):
         
         # GET a not running& not finished& not requested job from DB
         job = Job.getNext()
-        if job == None:
+        if job is None:
             logging.info('no not-running job found that was not requested already, abort')
             self.error(500)
             return
@@ -31,9 +31,6 @@ class GetJob(webapp2.RequestHandler):
         content = json.dumps(l, indent=2)
         logging.info(job.jobId)
         self.response.out.write(content)
-        # increment job counter
-        job.counter += 1
-        job.put()
 
 
 class GetVm(webapp2.RequestHandler):
@@ -118,7 +115,6 @@ class GetAllVms(webapp2.RequestHandler):
 
 class PutAllJobs(webapp2.RequestHandler):
     def put(self):
-        memcache.delete(GetAllJobs.cachekey)
         logging.info('put all jobs received')
         
         data_string = self.request.body
@@ -129,15 +125,14 @@ class PutAllJobs(webapp2.RequestHandler):
         if decoded.has_key('jobs'): 
             count_jobs = len(decoded['jobs'])
             logging.info('count jobs: '+str(count_jobs))
-            jobs = []
-            for job in decoded['jobs']:
-                temp = Job(key_name=str(job['jobId']))
-                temp.set(job)
-                jobs.append(temp)
             
-            for job in jobs:
-                job.put()
-                logging.info('put job['+str(job.jobId)+'] into datastore')
+            for job in decoded['jobs']:
+                temp = Job(key_name=str(job['jobId']), parent=currentIteration)
+                temp.set(job)
+                temp.put()
+                logging.info('put job['+str(temp.jobId)+'] into datastore')
+            
+            memcache.delete(GetAllJobs.cachekey)
             
             email = self.request.get("email")
             if email:
@@ -194,7 +189,7 @@ class PutJob(webapp2.RequestHandler):
         
         jobs = []
         for job in decoded['jobs']:
-            temp = Job(key_name=str(job['jobId']))
+            temp = Job(key_name=str(job['jobId']), parent=currentIteration)
             temp.set(job)
             # Lookup Job in DB and see if already running
             # if not running overwrite and send 200 else 500
