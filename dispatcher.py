@@ -52,7 +52,10 @@ class Dispatcher():
         if sys.flags.debug:
             return job.proc
         else:
-            return job.proc.get(timeout=1)
+            try:
+                return job.proc.get(timeout=1)
+            except:
+                return None
     
     
     
@@ -93,7 +96,7 @@ class Dispatcher():
                     self.create_workenv(job)
                     self.call_evaluation(job)
                     jobs.append(job)
-    
+                    
             print "[+] %s Checking job states (%d/%d running)" % (time.strftime("%H:%M:%S"), len(jobs), NCORES)
             for job in jobs:
                 # Check if the job terminated
@@ -101,33 +104,18 @@ class Dispatcher():
                     job.running = False
                     job.finished = True
                     job.result = PENALTY_VALUE  # gets updated by gather_results
-    
-#                     if rc == 0:
+                    
                     job.result = self.gather_results(job)
-                    job.proc = None
-                    print job
-                    if putJob(job):
-                        print "[+] Successfully completed job %d (return=%f, time=%f)" % (job.jobId, job.result, time.time()-job.time)
-#                         shutil.rmtree(str(job.jobId))
-                        jobs.remove(job)
-                    else:
-                        print "[E] Failed to submit completed job to GAE, trying again later"
-                        time.sleep(random.randrange(1, 5))
-#                     else:
-#                         print "[E] Job %d terminated with code %d" % (job.jobId, rc)
-#                         print "[E] stderr:"
-#                         print proc.stderr.read()
-#                         print "[E] stdout:"
-#                         print proc.stdout.read()
-#                         if putJob(job):
-#                             print "[+] Completed job %d with PENALTY (FFB=%f)" % (job.jobId, job.result)
-#                             shutil.rmtree(str(job.jobId))
-#                             jobs.remove(job)
-#                         else:
-#                             print "[E] Failed to submit completed job to GAE"
-    
-    #        gae_put_vm(URL, vm)
-    
+                    if job.result is not None:
+                        job.proc = None
+                        print job
+                        if putJob(job):
+                            print "[+] Successfully completed job %d (return=%f, time=%f)" % (job.jobId, job.result, time.time()-job.time)
+                            jobs.remove(job)
+                        else:
+                            print "[E] Failed to submit completed job to GAE, trying again later"
+                            time.sleep(random.randrange(1, 5))
+                            
             return jobs
 
 
