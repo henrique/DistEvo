@@ -37,14 +37,14 @@ class Dispatcher():
     
     def call_evaluation(self, job):
         print "[+] Running job %d" % (job.jobId)
-#         p = multiprocessing.Process(target=self.eval_func, args=job)
-#         p.start()
-#         job.proc = p
         
-        if sys.flags.debug:
-            job.proc = self.eval_func(job.jobId, job.params)
-        else:
-            job.proc = self.pool.apply_async(self.eval_func, [job.jobId, job.params])
+        try:
+            if sys.flags.debug:
+                job.proc = self.eval_func(job.jobId, job.params)
+            else:
+                job.proc = self.pool.apply_async(self.eval_func, [job.jobId, job.params])
+        except:
+            job.proc = None
         
     
     
