@@ -29,7 +29,7 @@ class GetJob(webapp2.RequestHandler):
         
         l = { 'jobs': [job.getJSON()]}
         content = json.dumps(l, indent=2)
-        logging.info(job.jobId)
+        logging.info(job)
         self.response.out.write(content)
 
 
@@ -59,34 +59,35 @@ class GetAllJobs(webapp2.RequestHandler):
 
     def get(self):
         self.response.headers['Content-Type'] = 'application/json'
-        data = memcache.get(self.cachekey)
-        if data is None:
-            data = self.getFromDB()
-            if memcache.set(self.cachekey, data, 300): #5min
-                logging.info("adding to cache: " + self.cachekey)
-        
-        # logging.info(data)
+        data = GetAllJobs.load()
+#         logging.info(data)
         self.response.out.write(data)
     
     
-    def getFromDB(self):
+    @staticmethod
+    def load():
+        data = memcache.get(GetAllJobs.cachekey)
+        if data is None:
+            data = GetAllJobs.getFromDB()
+            if memcache.set(GetAllJobs.cachekey, data, 600): #10min
+                logging.info("Adding jobs to cache: " + GetAllJobs.cachekey)
+        return data
+    
+    
+    @staticmethod
+    def getFromDB():
         #l = {}
         #cur_iter = Job.currentIteration()
-        logging.info("get all jobs from db")
+        logging.info("Get all jobs from db")
         #l['iteration'] = cur_iter
         
-        
-        # GET a not running job from DB
-        jobs = db.GqlQuery("Select * "
-                           "FROM Job "
-                           #"WHERE iteration = :1 "
-                           "ORDER BY iteration, jobId")#, cur_iter)
+        jobs = Job.getAll()
         countJobs = jobs.count()
-        logging.info("countJobs: "+str(countJobs))
+        logging.info("Loading %d Jobs", countJobs)
         if countJobs > 0:
-           l = { 'jobs': [job.getJSON() for job in jobs]}
+            l = { 'jobs': [job.getJSON() for job in jobs] }
         else:
-           l = { 'jobs': []}
+            l = { 'jobs': [] }
           
         content = json.dumps(l, indent=2)
         return content

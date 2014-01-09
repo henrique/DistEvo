@@ -1,11 +1,10 @@
 from google.appengine.ext import db
+from google.appengine.api import memcache as mc
 import time, logging
 
 currentIteration = db.Model(key_name='curr')
 
 class Job(db.Model):
-    _redundancyLevel = 1
-    _redundancyTimer = None
     _redundancyTimeout = 900 #15min
     
     jobId = db.IntegerProperty()
@@ -52,13 +51,40 @@ class Job(db.Model):
 
 
     @staticmethod
+    def getRedundancyLevel():
+        level = mc.get('_redundancyLevel')
+        if level is None: level = 1;
+        return level
+    
+    @staticmethod
+    def setRedundancyLevel(redundancyLevel):
+        return mc.set('_redundancyLevel', redundancyLevel, 7200) #2h
+    
+    @staticmethod
+    def getRedundancyTimer():
+        return mc.get('_redundancyTimer')
+    
+    @staticmethod
+    def setRedundancyTimer(redundancyTimer):
+        return mc.set('_redundancyTimer', redundancyTimer, 7200) #2h
+    
+    @staticmethod
+    def incrRedundancyTimer():
+        #mc.incr('_redundancyLevel')
+        Job.setRedundancyLevel(Job.getRedundancyLevel() + 1)
+        logging.info('New job redundancy level: %d', Job.getRedundancyLevel())
+
+
+    @staticmethod
     @db.transactional(xg=True)
     def getNext():
         """ GET a not running, not finished, and not yet requested job from DB """
+        redundancyLevel = Job.getRedundancyLevel()
+        
         q = Job.all().ancestor(currentIteration)
         q.filter("running =", False)
         q.filter("finished =", False)
-        q.filter("counter <", Job._redundancyLevel) #redundancy level
+        q.filter("counter <", redundancyLevel) #redundancy level
         q.order("counter")
         job = q.get()
         
@@ -66,14 +92,24 @@ class Job(db.Model):
             # increment job counter
             job.counter += 1
             job.put()
-            Job._redundancyLevel = job.counter #reset
+            Job.setRedundancyLevel( job.counter ) #reset
         else:
-            if Job._redundancyTimer is None:
-                Job._redundancyTimer = time.time()
-            elif time.time() - Job._redundancyTimer > Job._redundancyTimeout:
-                Job._redundancyTimer = None
-                Job._redundancyLevel += 1
-                logging.info('New job redundancy level: %d', Job._redundancyLevel)
+            redundancyTimer = Job.getRedundancyTimer()
+            if redundancyTimer is None:
+                Job.setRedundancyTimer( time.time() )
+            elif time.time() - redundancyTimer > Job._redundancyTimeout:
+                Job.setRedundancyTimer(None)
+                Job.incrRedundancyTimer()
+            logging.info('No new Job: redundancyLevel:%d redundancyTimer:%f', redundancyLevel, time.time() - (redundancyTimer or 0))
             
         return job
 
+
+    @staticmethod
+    def getAll(): #cur_iter):
+        """ GET all jobs from DB """
+        jobs = db.GqlQuery("Select * "
+                           "FROM Job "
+                           #"WHERE iteration = :1 "
+                           "ORDER BY iteration, jobId")#, cur_iter)
+        return jobs
