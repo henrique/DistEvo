@@ -15,7 +15,7 @@ from subprocess import call
 from gae_config import *
 import numpy as np
 
-PENALTY_VALUE=999.9
+PENALTY_VALUE = 1e12
 
 url = server_target
 

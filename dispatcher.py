@@ -54,8 +54,9 @@ class Dispatcher():
         else:
             try:
                 return job.proc.get(timeout=1)
-            except:
-                return None
+            except Exception as ex:
+                print ex
+                return PENALTY_VALUE
     
     
     

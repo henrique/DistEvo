@@ -147,5 +147,5 @@ if __name__ == '__main__':
     upper_bounds = np.array([2.0, 2.0])
     
     while 1:
-        drive_optimization(population_size=8, dim=dim, lower_bounds=lower_bounds, upper_bounds=upper_bounds)
-        time.sleep(2)
+        drive_optimization(population_size=100, dim=dim, lower_bounds=lower_bounds, upper_bounds=upper_bounds)
+        time.sleep(5)
