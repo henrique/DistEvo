@@ -1,8 +1,8 @@
 #! /usr/bin/env python
 
-import time
+import time, sys
 
-from gc3libs import configure_logger
+from gc3libs import configure_logger, logging
 from gc3libs.optimizer.dif_evolution import DifferentialEvolutionAlgorithm
 from gc3libs.optimizer import draw_population
 from gae_lib import *

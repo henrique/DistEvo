@@ -1,11 +1,17 @@
 from google.appengine.ext import db
 from google.appengine.api import memcache as mc
-import time, logging
+import os, time, logging
 
 currentIteration = db.Model(key_name='curr')
 
+def isLocal():
+    return os.environ["SERVER_NAME"] == "localhost"
+
+class Archieve(db.Model):
+    pop = db.TextProperty()
+
 class Job(db.Model):
-    _redundancyTimeout = 900 #15min
+    _redundancyTimeout = 5 if isLocal() else 900 #15min
     
     jobId = db.IntegerProperty()
     iteration = db.IntegerProperty()
@@ -95,12 +101,12 @@ class Job(db.Model):
             Job.setRedundancyLevel( job.counter ) #reset
         else:
             redundancyTimer = Job.getRedundancyTimer()
+            logging.info('No new Job: redundancyLevel:%d redundancyTimer:%f', redundancyLevel, time.time() - (redundancyTimer or 0))
             if redundancyTimer is None:
                 Job.setRedundancyTimer( time.time() )
             elif time.time() - redundancyTimer > Job._redundancyTimeout:
                 Job.setRedundancyTimer(None)
                 Job.incrRedundancyTimer()
-            logging.info('No new Job: redundancyLevel:%d redundancyTimer:%f', redundancyLevel, time.time() - (redundancyTimer or 0))
             
         return job
 

@@ -120,8 +120,7 @@ class PutAllJobs(webapp2.RequestHandler):
         
         data_string = self.request.body
         decoded = json.loads(data_string)
-        decoded2 = json.dumps(decoded, indent=2)
-        logging.info(decoded2)
+        logging.info(json.dumps(decoded, indent=2))
         
         if decoded.has_key('jobs'): 
             count_jobs = len(decoded['jobs'])
@@ -133,7 +132,14 @@ class PutAllJobs(webapp2.RequestHandler):
                 temp.put()
                 logging.info('put job['+str(temp.jobId)+'] into datastore')
             
-            memcache.delete(GetAllJobs.cachekey)
+            data = memcache.get(GetAllJobs.cachekey)
+            if data is not None:
+                decoded = json.loads(data)
+                if decoded.has_key('jobs'):
+                    arch = Archieve(key_name=str(decoded['jobs'][0]['iteration']))
+                    arch.pop = data
+                    arch.put()
+                memcache.delete(GetAllJobs.cachekey)
             
             email = self.request.get("email")
             if email:
