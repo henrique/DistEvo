@@ -6,7 +6,6 @@ import random
 
 from config import *
 from gae_lib import *
-URL = server_target
 
 NCORES = multiprocessing.cpu_count()
 
@@ -68,14 +67,6 @@ class Dispatcher():
 #         os.chdir(WORKDIR)
     
         print "[+] dispatcher starting up..."
-        """
-        vm = None
-        while not vm:
-            vm = gae_get_vm(URL)
-            time.sleep(10)
-    
-        print "[+] Got VM: %s" % vm
-        """
         jobs = []
     
         while True:

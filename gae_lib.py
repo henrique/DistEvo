@@ -1,13 +1,7 @@
 #! /usr/bin/env python
 
-import os
-import sys
-import logging
-import shutil
-import subprocess
 import httplib
 import json
-import socket
 
 from subprocess import call
 
@@ -16,10 +10,6 @@ from gae_config import *
 import numpy as np
 
 PENALTY_VALUE = 1e12
-
-url = server_target
-
-print 'Running on', url
 
 
 
@@ -121,7 +111,7 @@ def getJobs(throw=False):
     # GET  jobs
     jobs = []
     try:
-        connection =  httplib.HTTPConnection(url)
+        connection =  httplib.HTTPConnection(gae_config.getServerURL())
         connection.request('GET', '/get/jobs/')
         result = connection.getresponse()
         data = result.read()
@@ -152,7 +142,7 @@ def getNextJob():
     # GET single job
     job = None
     try:
-        connection =  httplib.HTTPConnection(url)
+        connection =  httplib.HTTPConnection(gae_config.getServerURL())
         connection.request('GET', '/get/job/')
         result = connection.getresponse()
         data = result.read()
@@ -179,7 +169,7 @@ def getNextJob():
 def getVMs():
     vms = []
     try:
-        connection =  httplib.HTTPConnection(url)
+        connection =  httplib.HTTPConnection(gae_config.getServerURL())
         connection.request('GET', '/get/vms/')
         result = connection.getresponse()
         data = result.read()
@@ -206,7 +196,7 @@ def getVMs():
 def putJobs(jobs):
     # HTTP PUT Job's
     try:
-        connection =  httplib.HTTPConnection(url)
+        connection =  httplib.HTTPConnection(gae_config.getServerURL())
         body_content = json.dumps({ 'jobs': jobs}, indent=2, default=Job.serialize)
         headers = {"User-Agent": "python-httplib"}
         connection.request('PUT', '/put/jobs/', body_content, headers)
@@ -226,7 +216,7 @@ def putJobs(jobs):
 def putJob(job):
     # HTTP PUT Job
     try:
-        connection =  httplib.HTTPConnection(url)
+        connection =  httplib.HTTPConnection(gae_config.getServerURL())
         body_content = json.dumps({ 'jobs': [job] }, indent=2, default=Job.serialize)
         headers = {"User-Agent": "python-httplib"}
         connection.request('PUT', '/put/job/', body_content, headers)
@@ -246,7 +236,7 @@ def putJob(job):
 def putVMs(vms):
     # HTTP PUT VM's
     try:
-        connection =  httplib.HTTPConnection(url)
+        connection =  httplib.HTTPConnection(gae_config.getServerURL())
         body_content = json.dumps({ 'vms': vms}, indent=2)
         headers = {"User-Agent": "python-httplib"}
         connection.request('PUT', '/put/vms/', body_content, headers)
