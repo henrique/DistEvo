@@ -11,9 +11,11 @@ URL = server_target
 NCORES = multiprocessing.cpu_count()
 
 class Dispatcher():
-    def __init__(self, eval_func):
+    def __init__(self, eval_func, asynch=True):
         self.eval_func = eval_func
-        self.pool = multiprocessing.Pool(processes=NCORES)  # start worker processes
+        self.asynch = asynch
+        if asynch:
+            self.pool = multiprocessing.Pool(processes=NCORES)  # start worker processes
         
     def get_parameters_in(self, job):
         return job.params
@@ -39,17 +41,18 @@ class Dispatcher():
         print "[+] Running job %d" % (job.jobId)
         
         try:
-            if sys.flags.debug:
+            if not self.asynch:
                 job.proc = self.eval_func(job.jobId, job.params)
             else:
                 job.proc = self.pool.apply_async(self.eval_func, [job.jobId, job.params])
-        except:
+        except Exception as ex:
+            print ex
             job.proc = None
         
     
     
     def gather_results(self, job):
-        if sys.flags.debug:
+        if not self.asynch:
             return job.proc
         else:
             try:
@@ -107,12 +110,11 @@ class Dispatcher():
                     continue
                     
                 # Check if the job terminated
-                if sys.flags.debug or job.proc.ready(): #synchronous in debugging mode
+                if not self.asynch or job.proc.ready(): #synchronous jobs were already done
                     job.running = False
                     job.finished = True
-                    job.result = PENALTY_VALUE  # gets updated by gather_results
-                    
                     job.result = self.gather_results(job)
+                    
                     if job.result is not None:
                         proc, job.proc = job.proc, None #temporally store proc
                         print job
@@ -134,5 +136,6 @@ def test_evaluation(id, params):
     x = np.array(params)
     return sum(100.0*(x[1:]-x[:-1]**2.0)**2.0 + (1-x[:-1])**2.0)
 
+
 if __name__ == '__main__':
-    Dispatcher(test_evaluation).main()
+    Dispatcher(test_evaluation, not sys.flags.debug).main()

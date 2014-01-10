@@ -78,7 +78,7 @@ def drive_optimization(population_size, dim, lower_bounds, upper_bounds,
             count += job.finished
 
         cur_iter = job.iteration-1
-        print "Iter(%d): %d finished jobs" % (cur_iter, count)
+        print "Iter(%d): %d finished jobs" % (cur_iter+1, count)
 
         if finished:
             # Update population and evaluate convergence
