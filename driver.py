@@ -1,11 +1,8 @@
 #! /usr/bin/env python
 
 import time
-import numpy as np
-import datetime
 
-import gc3libs
-from gc3libs import Application, configure_logger
+from gc3libs import configure_logger
 from gc3libs.optimizer.dif_evolution import DifferentialEvolutionAlgorithm
 from gc3libs.optimizer import draw_population
 from gae_lib import *
@@ -64,8 +61,8 @@ def drive_optimization(population_size, dim, lower_bounds, upper_bounds,
         return
 
     if not pop: # empty
-        # Initialise population using the arguments passed to the
-        # DifferentialEvolutionParallel iniitalization
+        # Initialize population using the arguments passed to the
+        # DifferentialEvolutionParallel initialization
         opt.new_pop = draw_population(lower_bds=lower_bounds, upper_bds=upper_bounds, size=population_size, dim=dim)
 
         putJobs(pop2Jobs(opt))
