@@ -78,7 +78,7 @@ class Dispatcher():
     
     def run(self, jobs):
             # Core with nothing to do -> get a new job
-            while len(jobs) < NCORES:
+            while len(jobs) < (not self.asynch or NCORES): #run once on synchronous mode
                 job = getNextJob()
                 if job == None:
                     print "[-] No new job found, waiting..."
