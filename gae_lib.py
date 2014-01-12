@@ -49,52 +49,6 @@ class VM(dict):
 
 
 
-class LocalState():
-    state = {} #TODO: persist state on db 
-    
-    @staticmethod
-    def save(key, obj):
-#        print "Saving", obj.__dict__
-#        with open(key + '.bak', 'w') as f:
-#            data = json.dumps(obj.__dict__, indent=2)
-        LocalState.state = obj.__dict__
-            
-    @staticmethod
-    def load(key, obj):
-#        with open(key + '.bak', 'r') as f:
-#            data = f.read_all()
-#            data = json.loads(data)
-            data = LocalState.state
-#            print "Loading", data
-            obj.__dict__.update(data)
-            return obj
-
-
-
-def runApp(ex, sigmax):
-    print "optimization running with EX=%g, sigmaX=%g ..." % (ex, sigmax)
-    # the actual vale should be extracted from the forwardPremium output file 'simulation.out'
-    call(["rm", "-rf", "output*", "parameters.in"])
-    #call(["mkdir", "output"])
-    rf = open('parameters.in.orig', 'r')
-    with open('parameters.in', 'w') as wf:
-        while 1:
-            line = rf.readline()
-            if not line:
-                break
-    line = line.replace('EX', str(ex))
-    line = line.replace("sigmaX", str(sigmax))
-    wf.write(line)
-    call(["./forwardPremiumOut"])
-    try:
-        with open('output/simulation.out') as of:
-            print "simulation.out", of.readline() #TODO: read result
-            FAKE_FF_BETA = 2
-            return FAKE_FF_BETA
-    except IOError as e:
-        print 'Job Failed!'
-    
-    return PENALTY_VALUE
 
 
 def pop2Jobs(opt):
@@ -105,6 +59,61 @@ def pop2Jobs(opt):
         job = Job(jobId=i, params=params.tolist(), iteration=opt.cur_iter+1)
         jobs.append(job)
     return jobs
+
+
+def restoreCurrentPop(popHolder, cur_iter, throw=False):
+    """ GET current working population """
+    try:
+        connection =  httplib.HTTPConnection(gae_config.getServerURL())
+        connection.request('GET', '/get/pop/')
+        result = connection.getresponse()
+        data = result.read()
+        
+        if result.status == 200:
+            decoded = json.loads(data)
+            print 'Received working population: %d' % len(decoded['pop'])
+            popHolder.pop  = np.array(decoded['pop'])
+            popHolder.vals = np.array(decoded['vals'])
+            popHolder.cur_iter = cur_iter
+            
+            #set best individual
+            best_ix = np.argmin(popHolder.vals)
+            popHolder.best_x = popHolder.pop[best_ix, :].copy()
+            popHolder.best_y = popHolder.vals[best_ix].copy()
+            return True
+        else:
+            raise Exception("ERROR http status = "+str(result.status))
+            
+    except Exception as ex:
+        if throw:
+            raise ex
+        else:
+            print ex
+    finally:
+        connection.close()
+    return False
+        
+def putPop(opt):
+    """ Update current working population """
+    try:
+        connection =  httplib.HTTPConnection(gae_config.getServerURL())
+        body_content = json.dumps({
+                            'pop': opt.pop.tolist(),
+                            'vals': opt.vals.tolist()
+                        }, indent=2)
+        headers = {"User-Agent": "python-httplib"}
+        connection.request('PUT', '/put/pop/', body_content, headers)
+        result = connection.getresponse()
+        if result.status == 200:
+            print 'PUT pop OK - HTTP 200'
+            return True
+        else:
+            print result.status
+    except Exception as ex:
+        print ex
+    finally:
+        connection.close()
+    return False
 
 
 def getJobs(throw=False):
@@ -159,8 +168,8 @@ def getNextJob():
         else:
             print "ERROR http status = "+str(result.status)
             
-    except:
-        pass
+    except Exception as ex:
+        print ex
     finally:
         connection.close()
     return job
@@ -186,8 +195,8 @@ def getVMs():
         else:
             print "ERROR http status = "+str(result.status)
             
-    except:
-        pass
+    except Exception as ex:
+        print ex
     finally:
         connection.close()
     return vms

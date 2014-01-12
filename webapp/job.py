@@ -10,6 +10,11 @@ def isLocal():
 class Archieve(db.Model):
     pop = db.TextProperty()
 
+class Pop(db.Model):
+    """ Current population """
+    pop  = db.TextProperty()
+    vals = db.TextProperty()
+
 class Job(db.Model):
     _redundancyTimeout = 5 if isLocal() else 900 #15min
     
@@ -116,6 +121,6 @@ class Job(db.Model):
         """ GET all jobs from DB """
         jobs = db.GqlQuery("Select * "
                            "FROM Job "
-                           #"WHERE iteration = :1 "
-                           "ORDER BY iteration, jobId")#, cur_iter)
+                           "ORDER BY iteration, jobId")
+                           #"WHERE iteration = :1 "#, cur_iter)
         return jobs

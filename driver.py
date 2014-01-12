@@ -74,8 +74,11 @@ def drive_optimization(population_size, dim, lower_bounds, upper_bounds,
             finished &= job.finished
             count += job.finished
 
-        cur_iter = job.iteration-1
+        cur_iter = job.iteration-1 #opt iter index start with 0
         print "Iter(%d): %d finished jobs" % (cur_iter+1, count)
+        
+        if opt.cur_iter != cur_iter:
+            restoreCurrentPop(opt, cur_iter) #restore current population and iteration counter
 
         if finished:
             # Update population and evaluate convergence
@@ -87,16 +90,7 @@ def drive_optimization(population_size, dim, lower_bounds, upper_bounds,
                 newVals[k] = (job.result if job.result != None else PENALTY_VALUE)
                 k += 1
 
-            # Update iteration count
-#            global cur_iter, bestval
-#             opt.cur_iter += 1
-#            opt.cur_iter = cur_iter
-#            opt.bestvtest/fp_lib.pyal = bestval #!!!
-#            opt.vals = newVals #!!!
-#            opt.pop = opt.new_pop #!!!
-
             opt.update_opt_state(opt.new_pop, newVals)
-            opt.cur_iter = cur_iter + 1 #restore current iteration counter
 
             if not opt.has_converged():
                 print [opt.best_y, opt.best_x]
@@ -104,8 +98,9 @@ def drive_optimization(population_size, dim, lower_bounds, upper_bounds,
                 # Generate new population and enforce constrains
                 opt.new_pop = opt.evolve()
                 
-                # Push and run again!
-                putJobs(pop2Jobs(opt))
+                # Push all and run again!
+                if putJobs(pop2Jobs(opt)):
+                    putPop(opt)
                 
             else:
                 # Once iteration has terminated, extract `bestval` which should represent
@@ -132,8 +127,6 @@ def drive_optimization(population_size, dim, lower_bounds, upper_bounds,
 #         pass  #TODO manage VMs
 
     # Then, we could also run the forwardPremium binary here; Single script solution
-
-    LocalState.save("driver", opt)
     
 
 
@@ -144,5 +137,5 @@ if __name__ == '__main__':
     upper_bounds = np.array([2.0, 2.0])
     
     while 1:
-        drive_optimization(population_size=100, dim=dim, lower_bounds=lower_bounds, upper_bounds=upper_bounds)
+        drive_optimization(population_size=10, dim=dim, lower_bounds=lower_bounds, upper_bounds=upper_bounds)
         time.sleep(5)

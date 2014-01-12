@@ -114,9 +114,46 @@ class GetAllVms(webapp2.RequestHandler):
         self.response.out.write(content)
 
 
+class GetPopulation(webapp2.RequestHandler):
+    def get(self):
+        self.response.headers['Content-Type'] = 'application/json'
+        logging.info("get population received")
+        
+        # GET a not running job from DB
+        pop = Pop.all().get()
+        
+        content = json.dumps({
+                            'pop': json.loads(pop.pop),
+                            'vals': json.loads(pop.vals)
+                        }, indent=2)
+        logging.info(content)
+        self.response.out.write(content)
+
+class PutPopulation(webapp2.RequestHandler):
+    def put(self):
+        logging.info('put Population received')
+        data_string = self.request.body
+        logging.info(data_string)
+        decoded = json.loads(data_string)
+        
+        pop = Pop(key_name='curr')
+        pop.pop  = json.dumps(decoded['pop'])
+        pop.vals = json.dumps(decoded['vals'])
+        pop.put()
+
+
 class PutAllJobs(webapp2.RequestHandler):
+    _lockKey = '_job_lock'
+    
     def put(self):
         logging.info('put all jobs received')
+        
+        if memcache.get(PutAllJobs._lockKey) is not None:
+            logging.warn('jobs locked by another caller')
+            self.error(500)
+            return
+        else:
+            memcache.set(PutAllJobs._lockKey, True, 5) #5s
         
         data_string = self.request.body
         decoded = json.loads(data_string)
@@ -135,7 +172,7 @@ class PutAllJobs(webapp2.RequestHandler):
             data = memcache.get(GetAllJobs.cachekey)
             if data is not None:
                 decoded = json.loads(data)
-                if decoded.has_key('jobs'):
+                if decoded.has_key('jobs') and len(decoded['jobs']) > 0:
                     arch = Archieve(key_name=str(decoded['jobs'][0]['iteration']))
                     arch.pop = data
                     arch.put()
@@ -291,10 +328,12 @@ app = webapp2.WSGIApplication([('/', MainPage),
                                ('/put/vms/', PutAllVms),
                                ('/put/job/', PutJob),
                                ('/put/vm/', PutVm),
+                               ('/put/pop/', PutPopulation),
                                ('/get/job/', GetJob),
                                ('/get/vm/', GetVm),
                                ('/get/jobs/', GetAllJobs),
                                ('/get/vms/', GetAllVms),
+                               ('/get/pop/', GetPopulation),
                                ('/admin/i_really_want_to_delete_everything', bulkdelete)],
                               debug=True)
 
