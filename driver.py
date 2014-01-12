@@ -44,16 +44,10 @@ def drive_optimization(population_size, dim, lower_bounds, upper_bounds,
         logger = logger,
         in_domain = in_domain,
         )
-    opt.vals = np.ones(population_size)*sys.float_info.max #init
-
-    try:
-        tmp = LocalState.load("driver", opt)
-        #print tmp, opt
-    except:
-        print 'Nothing to be loaded...'
-
-    ## Jobs: create and manage population
+    opt.vals = np.ones(population_size)*PENALTY_VALUE #init
     
+    
+    """ Jobs: create and manage population """
     try:
         pop = getJobs(throw=True)
     except Exception as ex: #server error
@@ -91,6 +85,7 @@ def drive_optimization(population_size, dim, lower_bounds, upper_bounds,
                 k += 1
 
             opt.update_opt_state(opt.new_pop, newVals)
+            putPop(opt)
 
             if not opt.has_converged():
                 print [opt.best_y, opt.best_x]
@@ -99,8 +94,7 @@ def drive_optimization(population_size, dim, lower_bounds, upper_bounds,
                 opt.new_pop = opt.evolve()
                 
                 # Push all and run again!
-                if putJobs(pop2Jobs(opt)):
-                    putPop(opt)
+                putJobs(pop2Jobs(opt))
                 
             else:
                 # Once iteration has terminated, extract `bestval` which should represent

@@ -2,6 +2,7 @@
 
 import httplib
 import json
+import sys
 
 from subprocess import call
 
@@ -9,7 +10,7 @@ from subprocess import call
 from gae_config import *
 import numpy as np
 
-PENALTY_VALUE = 1e12
+PENALTY_VALUE = sys.float_info.max
 
 
 
