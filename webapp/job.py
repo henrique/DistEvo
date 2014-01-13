@@ -7,8 +7,10 @@ currentIteration = db.Model(key_name='curr')
 def isLocal():
     return os.environ["SERVER_NAME"] == "localhost"
 
-class Archieve(db.Model):
-    pop = db.TextProperty()
+class Archive(db.Model):
+    jobs = db.TextProperty()
+    pop  = db.TextProperty()
+    vals = db.TextProperty()
 
 class Pop(db.Model):
     """ Current population """

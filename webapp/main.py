@@ -173,8 +173,12 @@ class PutAllJobs(webapp2.RequestHandler):
             if data is not None:
                 decoded = json.loads(data)
                 if decoded.has_key('jobs') and len(decoded['jobs']) > 0:
-                    arch = Archieve(key_name=str(decoded['jobs'][0]['iteration']))
-                    arch.pop = data
+                    arch = Archive(key_name=str(decoded['jobs'][0]['iteration']))
+                    arch.jobs = data
+                    pop = Pop.all().get() #get current population to archive
+                    if pop is not None:
+                        arch.pop = pop.pop
+                        arch.vals = pop.vals
                     arch.put()
                 memcache.delete(GetAllJobs.cachekey)
             
