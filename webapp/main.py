@@ -24,7 +24,7 @@ class GetJob(webapp2.RequestHandler):
         job = Job.getNext()
         if job is None:
             logging.info('no not-running job found that was not requested already, abort')
-            self.error(500)
+            self.error(204)
             return
         
         l = { 'jobs': [job.getJSON()]}
@@ -45,7 +45,7 @@ class GetVm(webapp2.RequestHandler):
         vm = q.get()
         if vm == None:
             logging.info('no vm found for this ip: '+str(self.request.remote_addr)+', abort')
-            self.error(500)
+            self.error(204)
             return
         
         l = { 'vms': [vm.getJSON()]}
@@ -98,7 +98,6 @@ class GetAllVms(webapp2.RequestHandler):
         self.response.headers['Content-Type'] = 'application/json'
         logging.info("get all vms received")
         
-        # GET a not running job from DB
         vms = db.GqlQuery("Select * "
                            "FROM VM "
                            "ORDER BY ip")
@@ -119,15 +118,18 @@ class GetPopulation(webapp2.RequestHandler):
         self.response.headers['Content-Type'] = 'application/json'
         logging.info("get population received")
         
-        # GET a not running job from DB
         pop = Pop.all().get()
         
-        content = json.dumps({
-                            'pop': json.loads(pop.pop),
-                            'vals': json.loads(pop.vals)
-                        }, indent=2)
-        logging.info(content)
-        self.response.out.write(content)
+        if pop is not None:
+            content = json.dumps({
+                                'pop': json.loads(pop.pop),
+                                'vals': json.loads(pop.vals)
+                            }, indent=2)
+            logging.info(content)
+            self.response.out.write(content)
+        else:
+            self.error(204)
+            
 
 class PutPopulation(webapp2.RequestHandler):
     def put(self):
@@ -150,7 +152,7 @@ class PutAllJobs(webapp2.RequestHandler):
         
         if memcache.get(PutAllJobs._lockKey) is not None:
             logging.warn('jobs locked by another caller')
-            self.error(500)
+            self.error(204)
             return
         else:
             memcache.set(PutAllJobs._lockKey, True, 5) #5s
@@ -232,7 +234,7 @@ class PutJob(webapp2.RequestHandler):
         count_jobs = len(decoded['jobs'])
         if count_jobs > 1:
             logging.info("more than 1 job, abort")
-            self.error(500)
+            self.error(204)
             return
         
         jobs = []
@@ -244,16 +246,20 @@ class PutJob(webapp2.RequestHandler):
             q = Job.all()
             q.filter("jobId =", temp.jobId)
             result = q.get()
+            if result is not None:
 #                 if result.vmIp != self.request.remote_addr:
 #                     logging.info('job already running from other vm, abort')
 #                     self.error(500)
 #                     return
-            if result.finished: #not result.running or 
-                continue #skip job
-            if result.iteration != temp.iteration:
-                continue #skip job
-            temp.vmIp = self.request.remote_addr
-            jobs.append(temp)
+                if result.finished:
+                    continue #skip job
+                if result.iteration != temp.iteration:
+                    continue #skip job
+                temp.vmIp = self.request.remote_addr
+                jobs.append(temp)
+            else:
+                self.error(204)
+                
         
         for job in jobs:
             job.put()
