@@ -3,18 +3,12 @@
     <h1>Python Distributed Evolutionary optimization on Google App Engine</h1>
     <p></p>
     <li>GET</li>
-    	<ul> <a href="/get/vm/">/get/vm/</a> -> return a single VM, only if request.ip = (vm.ip from db)</ul>
-    	<ul> <a href="/get/vms/">/get/vms/</a> -> return all active VM's</ul>
+    	<ul> <a href="/get/pop/">/get/pop/</a> -> return current population</ul>
     	<ul> <a href="/get/job/">/get/job/</a> -> return a new job (not running)</ul>
     	<ul> <a href="/get/jobs/">/get/jobs/</a> -> return all jobs</ul>
     <li>PUT</li>
-    	<ul> /put/vm/ -> put a single VM (saves IP from http request), use from VM</ul>
     	<ul> /put/job/ -> put a single job (saves IP from http request), use from VM</ul>
-    	<ul> /put/vms/ -> put all VM's (saves IP from json), use from driver</ul>
-    	<ul> /put/jobs/ -> put all VM's (saves IP from json), use from driver</ul>
-    
-    <p>Example PUT JSON files:</p>
-    <a href="/files/jsonJobs.txt">Job's</a></br>
-    <a href="/files/jsonVms.txt">VM's</a>
+    	<ul> /put/jobs/ -> update all Job's, use from driver</ul>
+    	<ul> /put/pop/ -> update the current population</ul>
   </body>
 </html>
