@@ -25,13 +25,12 @@ class Job(db.Model):
     vmIp = db.StringProperty()
     params = db.ListProperty(float)
     result = db.FloatProperty()
-    running = db.BooleanProperty()
     finished = db.BooleanProperty()
-    counter = db.IntegerProperty(required=True, default=0)
+    sent = db.IntegerProperty(required=True, default=0)
     
 
     def getJSON(self):
-        s = {'jobId': self.jobId, 'iteration': self.iteration, 'vmIp': self.vmIp, 'params': self.params, 'running': self.running, 'finished': self.finished, 'result': self.result, 'counter': self.counter}
+        s = {'jobId': self.jobId, 'iteration': self.iteration, 'vmIp': self.vmIp, 'params': self.params, 'finished': self.finished, 'result': self.result, 'sent': self.sent}
         return s
 
 
@@ -49,10 +48,9 @@ class Job(db.Model):
         self.iteration = job['iteration']
         self.vmIp = job['vmIp']
         self.params = job['params']
-        self.running = job['running']
         self.finished = job['finished']
         self.result = job['result']
-        self.counter = job['counter']
+        self.sent = job['sent']
 
 
     @staticmethod
@@ -95,17 +93,16 @@ class Job(db.Model):
         redundancyLevel = Job.getRedundancyLevel()
         
         q = Job.all().ancestor(currentIteration)
-        q.filter("running =", False)
         q.filter("finished =", False)
-        q.filter("counter <", redundancyLevel) #redundancy level
-        q.order("counter")
+        q.filter("sent <", redundancyLevel) #redundancy level
+        q.order("sent")
         job = q.get()
         
         if job is not None:
             # increment job counter
-            job.counter += 1
+            job.sent += 1
             job.put()
-            Job.setRedundancyLevel( job.counter ) #reset
+            Job.setRedundancyLevel( job.sent ) #reset
         else:
             redundancyTimer = Job.getRedundancyTimer()
             logging.info('No new Job: redundancyLevel:%d redundancyTimer:%f', redundancyLevel, time.time() - (redundancyTimer or 0))

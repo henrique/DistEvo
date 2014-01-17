@@ -19,7 +19,6 @@ for i in range(N_JOBS):
     job.jobId = i
     job.iteration = 1
     job.params = np.random.random_sample(2).tolist()
-    job.running = False
     job.finished = False
     jobs.append(job)
 

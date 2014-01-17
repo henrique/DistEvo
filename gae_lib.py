@@ -21,9 +21,8 @@ class Job():
         self.vmIp = None
         self.params = []
         self.result = None
-        self.running = False
         self.finished = False
-        self.counter = 0
+        self.sent = 0
         self.__dict__.update(entries)
 
     @staticmethod

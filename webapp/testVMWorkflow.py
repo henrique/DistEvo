@@ -63,7 +63,6 @@ connection.close()
 
 
 # PUT job.running = True
-jobReal.running = True
 l = { 'jobs': [ jobReal.getJSON() ]}
 
 data_string_jobs = json.dumps(l, indent=2)
