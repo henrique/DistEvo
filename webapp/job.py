@@ -22,9 +22,9 @@ class Job(db.Model):
     
     jobId = db.IntegerProperty()
     iteration = db.IntegerProperty()
-    vmIp = db.StringProperty()
-    params = db.ListProperty(float)
-    result = db.FloatProperty()
+    vmIp = db.StringProperty(indexed=False)
+    params = db.ListProperty(float, indexed=False)
+    result = db.FloatProperty(indexed=False)
     finished = db.BooleanProperty()
     sent = db.IntegerProperty(required=True, default=0)
     

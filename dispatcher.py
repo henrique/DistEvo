@@ -1,13 +1,15 @@
 #!/usr/bin/env python
 
-import time
+import time, sys
 import multiprocessing
 import random
+import numpy as np
 
-from config import *
-from gae_lib import *
+from gae_lib import PENALTY_VALUE, putJob, getNextJob
+
 
 NCORES = multiprocessing.cpu_count()
+
 
 class Dispatcher():
     def __init__(self, eval_func, asynch=True):
@@ -121,8 +123,9 @@ class Dispatcher():
 
 
 # test dispatcher
-def test_evaluation(id, params):
+def test_evaluation(jobid, params):
     """The Rosenbrock function"""
+    print "Rosenbrock (jobid=%d, params=%d) " % (jobid, len(params)), params
     time.sleep(.1)
     x = np.array(params)
     return sum(100.0*(x[1:]-x[:-1]**2.0)**2.0 + (1-x[:-1])**2.0)

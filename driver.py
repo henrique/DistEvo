@@ -1,11 +1,13 @@
 #! /usr/bin/env python
 
 import time, sys
+import numpy as np
 
 from gc3libs import configure_logger, logging
 from gc3libs.optimizer.dif_evolution import DifferentialEvolutionAlgorithm
 from gc3libs.optimizer import draw_population
-from gae_lib import *
+
+from gae_lib import PENALTY_VALUE, getJobs, restoreCurrentPop, putPop, putJobs, pop2Jobs
 
 
 

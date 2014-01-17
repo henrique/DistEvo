@@ -7,7 +7,7 @@ import sys
 from subprocess import call
 
 
-from gae_config import *
+from gae_config import gae_config
 import numpy as np
 
 PENALTY_VALUE = sys.float_info.max

@@ -9,10 +9,10 @@ from job import *
 
 
 class MainPage(webapp2.RequestHandler):
-  def get(self):
-      self.response.headers['Content-Type'] = 'text/html'
-      file = open('index.html')
-      self.response.out.write(file.read())
+    def get(self):
+        self.response.headers['Content-Type'] = 'text/html'
+        file = open('index.html')
+        self.response.out.write(file.read())
 
 
 class GetJob(webapp2.RequestHandler):
@@ -56,6 +56,7 @@ class GetVm(webapp2.RequestHandler):
         
 class GetAllJobs(webapp2.RequestHandler):
     cachekey = 'alljobs'
+    cacheTimeout = 6 if isLocal() else 600 #10min
 
     def get(self):
         self.response.headers['Content-Type'] = 'application/json'
@@ -69,7 +70,7 @@ class GetAllJobs(webapp2.RequestHandler):
         data = memcache.get(GetAllJobs.cachekey)
         if data is None:
             data = GetAllJobs.getFromDB()
-            if memcache.set(GetAllJobs.cachekey, data, 600): #10min
+            if memcache.set(GetAllJobs.cachekey, data, GetAllJobs.cacheTimeout):
                 logging.info("Adding jobs to cache: " + GetAllJobs.cachekey)
         return data
     
