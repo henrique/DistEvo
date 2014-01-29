@@ -66,11 +66,11 @@ class GetAllJobs(webapp2.RequestHandler):
     
     
     @staticmethod
-    def load():
+    def load(cache=True):
         data = memcache.get(GetAllJobs.cachekey)
         if data is None:
             data = GetAllJobs.getFromDB()
-            if memcache.set(GetAllJobs.cachekey, data, GetAllJobs.cacheTimeout):
+            if cache and memcache.set(GetAllJobs.cachekey, data, GetAllJobs.cacheTimeout):
                 logging.info("Adding jobs to cache: " + GetAllJobs.cachekey)
         return data
     
@@ -166,13 +166,7 @@ class PutAllJobs(webapp2.RequestHandler):
             count_jobs = len(decoded['jobs'])
             logging.info('count jobs: '+str(count_jobs))
             
-            for job in decoded['jobs']:
-                temp = Job(key_name=str(job['jobId']), parent=currentIteration)
-                temp.set(job)
-                temp.put()
-                logging.info('put job['+str(temp.jobId)+'] into datastore')
-            
-            data = memcache.get(GetAllJobs.cachekey)
+            data = GetAllJobs.load(cache=False)
             if data is not None:
                 decoded = json.loads(data)
                 if decoded.has_key('jobs') and len(decoded['jobs']) > 0:
@@ -184,6 +178,8 @@ class PutAllJobs(webapp2.RequestHandler):
                         arch.vals = pop.vals
                     arch.put()
                 memcache.delete(GetAllJobs.cachekey)
+                
+            Job.put(decoded['jobs'])
             
             email = self.request.get("email")
             if email:

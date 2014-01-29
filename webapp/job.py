@@ -116,6 +116,16 @@ class Job(db.Model):
 
 
     @staticmethod
+    @db.transactional(xg=True)
+    def put(jobs):
+        for job in jobs:
+            temp = Job(key_name=str(job['jobId']), parent=currentIteration)
+            temp.set(job)
+            temp.put()
+            logging.info('put job['+str(temp.jobId)+'] into datastore')
+
+
+    @staticmethod
     def getAll(): #cur_iter):
         """ GET all jobs from DB """
         jobs = db.GqlQuery("Select * "
