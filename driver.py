@@ -88,22 +88,25 @@ def drive_optimization(population_size, dim, lower_bounds, upper_bounds,
 
             opt.update_opt_state(opt.new_pop, newVals)
             putPop(opt)
+            print [opt.best_y, opt.best_x]
 
+            if opt.cur_iter > opt.itermax:
+                print "Maximum number of iterations exceeded after [%d] steps. " % (opt.cur_iter)
+                # sys.exit()
+            
             if not opt.has_converged():
-                print [opt.best_y, opt.best_x]
-                
                 # Generate new population and enforce constrains
                 opt.new_pop = opt.evolve()
                 
                 # Push all and run again!
                 putJobs(pop2Jobs(opt))
+                return True
                 
             else:
                 # Once iteration has terminated, extract `bestval` which should represent
                 # the element in *all* populations that lead to the closest match to the
                 # empirical value
                 print "Calibration converged after [%d] steps. " % (opt.cur_iter)
-                print [opt.best_y, opt.best_x]
                 sys.exit()
             
 
@@ -123,6 +126,7 @@ def drive_optimization(population_size, dim, lower_bounds, upper_bounds,
 #         pass  #TODO manage VMs
 
     # Then, we could also run the forwardPremium binary here; Single script solution
+    return False
     
 
 

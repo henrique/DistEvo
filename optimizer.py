@@ -91,9 +91,9 @@ class OptimizationCmd:
 def main():
     """ Test Optimization """
     import numpy as np
-    lower_bounds = np.array([0.0, 0.0])
-    upper_bounds = np.array([2.0, 2.0])
-    opt = BaseOptimization(10, lower_bounds, upper_bounds, test_evaluation)
+    lower_bounds = np.array([0.0, 0.0, 0.0])
+    upper_bounds = np.array([2.0, 2.0, 2.0])
+    opt = BaseOptimization(20, lower_bounds, upper_bounds, test_evaluation)
     OptimizationCmd(opt).run()
 
 if __name__ == '__main__':

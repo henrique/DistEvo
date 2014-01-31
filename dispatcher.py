@@ -83,9 +83,10 @@ class Dispatcher():
             while len(jobs) < (not self.asynch or NCORES): #run once on synchronous mode
                 job = getNextJob()
                 if job == None:
-                    print "[-] No new job found, waiting..."
-                    # wait between 5 and 15 seconds to prevent several VMs from accessing GAE simultaneously
-                    time.sleep(random.randrange(5, 15))
+                    print "[-] No new job found"                    
+                    if jobs:
+                        # wait between 5 and 15 seconds to prevent several VMs from accessing GAE simultaneously
+                        time.sleep(random.randrange(5, 15))
                     break
                 else:
                     print "[+] Got eligible job with ID %d" % job.jobId
