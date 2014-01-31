@@ -1,6 +1,6 @@
 from google.appengine.ext import db
 from google.appengine.api import memcache as mc
-import os, time, logging
+import os, time, logging, json
 
 currentIteration = db.Model(key_name='curr')
 
@@ -18,7 +18,7 @@ class Pop(db.Model):
     vals = db.TextProperty()
 
 class Job(db.Model):
-    _redundancyTimeout = 5 if isLocal() else 900 #15min
+    _redundancyTimeout = 5 if isLocal() else 600 #10min
     
     jobId = db.IntegerProperty()
     iteration = db.IntegerProperty()
@@ -117,7 +117,7 @@ class Job(db.Model):
 
     @staticmethod
     @db.transactional(xg=True)
-    def put(jobs):
+    def putAll(jobs):
         for job in jobs:
             temp = Job(key_name=str(job['jobId']), parent=currentIteration)
             temp.set(job)
@@ -133,3 +133,15 @@ class Job(db.Model):
                            "ORDER BY iteration, jobId")
                            #"WHERE iteration = :1 "#, cur_iter)
         return jobs
+    
+    @staticmethod
+    def dump(jobs):
+        countJobs = jobs.count()
+        logging.info("Loading %d Jobs", countJobs)
+        if countJobs > 0:
+            l = { 'jobs': [job.getJSON() for job in jobs] }
+        else:
+            l = { 'jobs': [] }
+          
+        content = json.dumps(l, indent=2)
+        return content

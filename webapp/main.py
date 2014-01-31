@@ -1,11 +1,12 @@
 import webapp2
+from google.appengine.ext import db
+from google.appengine.api import memcache
+
 import logging
 import json
 import time
-from google.appengine.ext import db
-from google.appengine.api import memcache
-from vm import *
-from job import *
+from vm import VM
+from job import Job, Archive, Pop, isLocal, currentIteration
 
 
 class MainPage(webapp2.RequestHandler):
@@ -56,7 +57,7 @@ class GetVm(webapp2.RequestHandler):
         
 class GetAllJobs(webapp2.RequestHandler):
     cachekey = 'alljobs'
-    cacheTimeout = 6 if isLocal() else 600 #10min
+    cacheTimeout = 1 if isLocal() else 600 #10min
 
     def get(self):
         self.response.headers['Content-Type'] = 'application/json'
@@ -83,15 +84,7 @@ class GetAllJobs(webapp2.RequestHandler):
         #l['iteration'] = cur_iter
         
         jobs = Job.getAll()
-        countJobs = jobs.count()
-        logging.info("Loading %d Jobs", countJobs)
-        if countJobs > 0:
-            l = { 'jobs': [job.getJSON() for job in jobs] }
-        else:
-            l = { 'jobs': [] }
-          
-        content = json.dumps(l, indent=2)
-        return content
+        return Job.dump(jobs)
 
 
 class GetAllVms(webapp2.RequestHandler):
@@ -162,30 +155,31 @@ class PutAllJobs(webapp2.RequestHandler):
         decoded = json.loads(data_string)
         logging.info(json.dumps(decoded, indent=2))
         
-        if decoded.has_key('jobs'): 
-            count_jobs = len(decoded['jobs'])
-            logging.info('count jobs: '+str(count_jobs))
+        if decoded.has_key('jobs'):
+            jobs = decoded['jobs']
+            logging.info('count jobs: ' + str(len(jobs)))
             
-            data = GetAllJobs.load(cache=False)
+            data = Job.getAll()
             if data is not None:
-                decoded = json.loads(data)
-                if decoded.has_key('jobs') and len(decoded['jobs']) > 0:
-                    arch = Archive(key_name=str(decoded['jobs'][0]['iteration']))
-                    arch.jobs = data
+                if data.count(1) > 0:
+                    arch = Archive(key_name=str(data[0].iteration))
+                    arch.jobs = Job.dump(data)
                     pop = Pop.all().get() #get current population to archive
                     if pop is not None:
                         arch.pop = pop.pop
                         arch.vals = pop.vals
                     arch.put()
-                memcache.delete(GetAllJobs.cachekey)
-                
-            Job.put(decoded['jobs'])
+            
+            Job.putAll(jobs)
+            memcache.delete(GetAllJobs.cachekey)
+            memcache.delete(PutAllJobs._lockKey)
             
             email = self.request.get("email")
             if email:
                 logging.info(email)
                 from google.appengine.api import mail
                 mail.send_mail(sender=email, to=email, subject="New iteration started", body=data_string)
+            
                 
       
       
