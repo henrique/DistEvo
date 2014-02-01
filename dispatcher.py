@@ -39,7 +39,7 @@ class Dispatcher():
     
     
     def call_evaluation(self, job):
-        print "[+] Running job %d" % (job.jobId)
+        print "[+] Running job %d" % (job.jobId), job
         
         try:
             if not self.asynch:
