@@ -270,16 +270,16 @@ if __name__ == '__main__':
     getJobs()
     getVMs()
     assert putJobs([
-        Job(**{'params': np.random.random_sample(2).tolist(), 'finished': False, 'jobId': 1, 'running': False, 'result': None, 'vmIp': None}),
-        Job(**{'params': np.random.random_sample(2).tolist(), 'finished': False, 'jobId': 2, 'running': False, 'result': None, 'vmIp': None})
+        Job(**{'params': np.random.random_sample(2).tolist(), 'finished': False, 'jobId': 1, 'result': None, 'vmIp': None}),
+        Job(**{'params': np.random.random_sample(2).tolist(), 'finished': False, 'jobId': 2, 'result': None, 'vmIp': None})
         ])
     getJobs()
     assert putJobs([
-        Job(**{'params': np.random.random_sample(2).tolist(), 'finished': False, 'jobId': 1, 'iter': 1, 'running': False, 'result': None, 'vmIp': None}),
-        Job(**{'params': np.random.random_sample(2).tolist(), 'finished': False, 'jobId': 2, 'iter': 1, 'result': None, 'vmIp': None})
+        Job(**{'params': np.random.random_sample(2).tolist(), 'finished': False, 'jobId': 1, 'iteration': 1, 'result': None, 'vmIp': None}),
+        Job(**{'params': np.random.random_sample(2).tolist(), 'finished': False, 'jobId': 2, 'iteration': 1, 'result': None, 'vmIp': None})
         ])
     getJobs()
     assert putJob(
-        Job(**{'params': np.random.random_sample(2).tolist(), 'finished': False, 'jobId': 1, 'running': True, 'result': None, 'vmIp': 'LOCALHOST'})
+        Job(**{'params': np.random.random_sample(2).tolist(), 'finished': False, 'jobId': 1, 'result': None, 'vmIp': 'LOCALHOST'})
         )
     getJobs()
