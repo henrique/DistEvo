@@ -7,6 +7,7 @@ import json
 import time
 from vm import VM
 from job import Job, Archive, Pop, isLocal, currentIteration
+from stats import ShowStats
 
 
 class MainPage(webapp2.RequestHandler):
@@ -335,6 +336,7 @@ app = webapp2.WSGIApplication([('/', MainPage),
                                ('/get/jobs/', GetAllJobs),
                                ('/get/vms/', GetAllVms),
                                ('/get/pop/', GetPopulation),
+                               ('/stats', ShowStats),
                                ('/admin/i_really_want_to_delete_everything', bulkdelete)],
                               debug=True)
 

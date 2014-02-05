@@ -24,8 +24,9 @@ class BaseOptimization:
         while True: #TODO improve pooling process
             jobs = disp.run(jobs)
             if driver and not jobs:
-                drive_optimization(population_size=self.population_size, dim=self.dim, lower_bounds=self.lower_bounds, upper_bounds=self.upper_bounds)
-            elif asynch: #running in parallel
+                if not drive_optimization(population_size=self.population_size, dim=self.dim, lower_bounds=self.lower_bounds, upper_bounds=self.upper_bounds):
+                    time.sleep(5)
+            else:
                 #print jobs
                 time.sleep(15)
             

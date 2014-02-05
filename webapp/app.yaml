@@ -1,10 +1,11 @@
-application: dist-evo
+application: dist-evo3
 
-version: 1-1-1
+version: 1-1-2
 
 runtime: python27
 api_version: 1
-threadsafe: true
+threadsafe: false
+
 
 handlers:
 - url: /files
@@ -16,3 +17,11 @@ handlers:
 
 - url: /.*
   script: main.app
+
+
+libraries:
+- name: numpy
+  version: "latest"
+
+- name: matplotlib
+  version: "latest"
