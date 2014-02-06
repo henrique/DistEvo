@@ -28,8 +28,11 @@ except:
 
  
 def dynamic_plot(data):
-        for l in data: plt.plot(data[l], label=l)
-        plt.legend(bbox_to_anchor=(0., 1.02, 1., .102), loc=3, ncol=len(data), mode="expand", borderaxespad=0.)
+        for l in data:
+            d = np.array(data[l])
+            if np.max(d) > 1: d /= np.max(d) #normalization
+            plt.plot(d.tolist(), label=l)
+        plt.legend()
 
 def dynamic_png(data, show=False):
     try:
@@ -57,7 +60,7 @@ def dynamic_svg(data, show=False):
             return rv.getvalue().partition("-->")[-1]
     finally:
         plt.clf()
-# 
+
 # try: dynamic_png()  # crashes first time because it can't cache fonts
 # except: logging.exception("don't about it")
         
@@ -68,15 +71,10 @@ class Result:
         self.pop = pop
         self.vals = vals
         
-    @staticmethod
-    def serialize(obj):
-        return obj.__dict__
 
 if webapp2 is not None:
     class ShowStats(webapp2.RequestHandler):
         def get(self):
-            self.response.write("""<html><head/><body>""")
-            
             arch = db.GqlQuery("Select * FROM Archive ORDER BY __key__")
             plot, results, last = {}, [], None
             for item in arch:
@@ -93,22 +91,28 @@ if webapp2 is not None:
                     r.deltaPop = sum( (np.array(last.pop) != r.pop).any(axis=1).tolist() )
                     
                     #deviation of the changes over all parameters
-                    r.deltaPopDev = np.sqrt(np.sum((np.array(last.pop) - r.pop)**2))
+                    r.deltaPopDev = np.sqrt(np.sum( (np.array(last.pop) - r.pop)**2 ))
                 
                 last = r
             
-            #plot['vals'] = ([r._iter for r in results])
             
-            vals = np.array([np.log10(sum(r.vals)+1)-1 for r in results])
-            plot['logError'] = ((vals / max(vals)).tolist())
+            best = np.array([np.min(r.vals) for r in results])
+            plot['norm. smallest error'] = (best).tolist()
+            
+            vals = [np.log10(np.mean(r.vals)+1) for r in results]
+            plot['log10 average error'] = (vals / max(vals)).tolist()
+            
+            bestL = [np.log10(np.min(r.vals)+1) for r in results]
+            plot['log10 smallest error'] = (bestL / max(vals)).tolist()
             
             deltaPopDev = np.array([r.deltaPopDev for r in results[1:]])
-            plot['deltaPopDev'] = ((deltaPopDev / max(deltaPopDev)).tolist())
+            plot['Pop. deviation'] = (deltaPopDev).tolist()
             
             deltaPop = np.array([float(r.deltaPop) for r in results[1:]])
-            plot['deltaPop'] = ((deltaPop / max(deltaPop)).tolist())
+            plot['New individuals'] = (deltaPop).tolist()
             
-            
+            #create html
+            self.response.write("""<html><head/><body>""")
             if isLocal():
                 self.response.write("""Unfortunately, matplotlib doesn't work on the dev server!<br>""")
             else:
