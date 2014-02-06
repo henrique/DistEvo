@@ -1,6 +1,6 @@
 #!/usr/bin/python
 
-import time, sys
+import time, random, sys
 from gae_config import gae_config
 
 from driver import drive_optimization
@@ -19,16 +19,15 @@ class BaseOptimization:
     
     def run(self, driver=True, asynch=True):
         disp = Dispatcher(self.eval_func, asynch)
-        jobs = []
         
-        while True: #TODO improve pooling process
-            jobs = disp.run(jobs)
-            if driver and not jobs:
-                if not drive_optimization(population_size=self.population_size, dim=self.dim, lower_bounds=self.lower_bounds, upper_bounds=self.upper_bounds):
-                    time.sleep(5)
-            else:
-                #print jobs
-                time.sleep(15)
+        while True:
+            if disp.run(): #jobs done
+                if driver:
+                    if drive_optimization(population_size=self.population_size, dim=self.dim, lower_bounds=self.lower_bounds, upper_bounds=self.upper_bounds):
+                        continue
+            
+            # wait between 5 and 15 seconds to prevent several VMs from accessing GAE simultaneously
+            time.sleep(random.randrange(5, 15))
             
 
 

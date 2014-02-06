@@ -13,6 +13,7 @@ NCORES = multiprocessing.cpu_count()
 
 class Dispatcher():
     def __init__(self, eval_func, asynch=True):
+        self.jobs = []
         self.eval_func = eval_func
         self.asynch = asynch
         if asynch:
@@ -61,46 +62,34 @@ class Dispatcher():
             except Exception as ex:
                 print ex
                 return PENALTY_VALUE
-    
-    
-    
-    def main(self):
-    
-#         os.chdir(WORKDIR)
-    
-        print "[+] dispatcher starting up..."
-        jobs = []
-    
-        while True:
-            jobs = self.run(jobs)
-            time.sleep(0.1)
             
     
     
     
-    def run(self, jobs):
+    def run(self):
+        done = False
+        
+        while not done:
+            done = True
             # Core with nothing to do -> get a new job
-            while len(jobs) < (not self.asynch or NCORES): #run once on synchronous mode
+            while len(self.jobs) < (not self.asynch or NCORES): #run once on synchronous mode
                 job = getNextJob()
                 if job == None:
-                    print "[-] No new job found"                    
-                    if jobs:
-                        # wait between 5 and 15 seconds to prevent several VMs from accessing GAE simultaneously
-                        time.sleep(random.randrange(5, 15))
+                    print "[-] No new job found"
                     break
                 else:
                     print "[+] Got eligible job with ID %d" % job.jobId
                     job.time = time.time()
                     self.create_workenv(job)
                     self.call_evaluation(job)
-                    jobs.append(job)
+                    self.jobs.append(job)
                     
-            print "[+] %s Checking job states (%d/%d running)" % (time.strftime("%H:%M:%S"), len(jobs), NCORES)
-            for job in jobs:
+            print "[+] %s Checking job states (%d/%d running)" % (time.strftime("%H:%M:%S"), len(self.jobs), NCORES)
+            for job in self.jobs:
                 if job.proc is None:
                     print "[E] No process information!"
                     print job
-                    jobs.remove(job)
+                    self.jobs.remove(job)
                     continue
                     
                 # Check if the job terminated
@@ -110,17 +99,26 @@ class Dispatcher():
                     job.result = self.gather_results(job)
                     
                     if job.result is not None:
+                        done = False
                         proc, job.proc = job.proc, None #temporally store proc
                         print job
                         if putJob(job):
                             print "[+] Successfully completed job %d (return=%f, time=%f)" % (job.jobId, job.result, time.time()-job.time)
-                            jobs.remove(job)
+                            self.jobs.remove(job)
                         else:
                             job.proc = proc
                             print "[E] Failed to submit completed job to GAE, trying again later"
-                            time.sleep(random.randrange(1, 5))
-                            
-            return jobs
+                            return done
+        
+        return done
+    
+    
+    def main(self):
+        print "[+] dispatcher starting up..."
+        
+        while True:
+            self.run()
+            time.sleep(0.5)
 
 
 # test dispatcher
