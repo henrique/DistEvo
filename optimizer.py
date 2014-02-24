@@ -38,7 +38,7 @@ class OptimizationCmd:
     #          [[args?, short, long, description]]
     descOpts  = [ \
                  [0, "d", "driver", "Starts optimization driver to manage population."],
-                 [0, "j", "jobs", "Use asynchronous multiprocess jobs. Not compatible with most debuggers!"],
+                 [0, "j", "jobs", "Use asynchronous multiprocess jobs. (Not compatible with most debuggers)"],
                  [1, "s", "server", "DistEvo server URL. Takes hostname:port as arguments. E.g. --server=localhost:8080"],
                  [0, "h", "help", "Show this usage description."],
                 ]
@@ -55,7 +55,7 @@ class OptimizationCmd:
     def usage(self):
         print 'Usage: python %s [-%s]' % (str(sys.argv[0]).rpartition("/")[-1], self.shortopts), \
               ' '.join(['[--%s]' % opt for opt in self.longopts])
-        print '\n'.join(['{0:6} {1:12} {2}'.format((s+'[arg]' if a else s), (l+'=[arg]' if a else l), d) \
+        print '\n'.join(['-{0:8} --{1:14} {2}'.format((s+'[arg]' if a else s), (l+'=[arg]' if a else l), d) \
                for a,s,l,d in self.descOpts])
         
         
