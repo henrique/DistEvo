@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#! /usr/bin/env python
 
 import time, random, sys
 from gae_config import gae_config
@@ -89,7 +89,7 @@ class OptimizationCmd:
 
 
 def main():
-    """ Test Optimization """
+    """ Test 3D Optimization """
     import numpy as np
     lower_bounds = np.array([0.0, 0.0, 0.0])
     upper_bounds = np.array([2.0, 2.0, 2.0])
