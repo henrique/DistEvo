@@ -78,7 +78,7 @@ Installing
 
 All the dependencies can be easily met by installing their latest stable version. Apart from gc3pie, which was already mentioned above, you will only need to install python-numpy python-matplotlib. For example on Ubuntu:
 
-sudo apt-get install -y python-numpy python-matplotlib
+    sudo apt-get install -y python-numpy python-matplotlib
 
 You can also choose to use your preferable package system for python like pip or easy_install. After checking your PYTHONPATH we are ready to go.
 
@@ -94,7 +94,7 @@ Testing & running
     
 Each file within distEvo should be testable by itself, by simply running it as a script. The main start point is optimizer.py, which when run will start the whole chain of optimization using a multi-dimensional Rosenbrock function for testing. This script can be used to run a multi-core dispatcher and optionally also an optimization driver by simply running:
 
-optimizer.py -jd
+    optimizer.py -jd
 
 You could run the driver and the dispatcher in separate processes but the helper script optmizer.py can effitiently run both in parallel, as the driver does not use much CPU power and can safelly wait for the conclusion of the availabel jobs.
 
@@ -157,18 +157,20 @@ y_conv_crit: Declare convergence when the target function is below a y_conv_crit
 
 upper_bounds and lower_bounds: Define population bounds for initialization as well as on every evolution step.
 
+
+
 Script usage
 ---------------------
 
 The optimizer.py scripts is provided with a parameter parser and can directly set some options for optimization process itself. You can get the current usage and available parameter by running the script with the -h or --help as showed on the table below:
 
-./optimizer.py -h
-Usage: python optimizer.py [-djs:h] [--driver] [--jobs] [--server=] [--help]
--d        --driver          Starts optimization driver to manage population.
--j        --jobs            Use asynchronous multiprocess jobs.
--s[url]    --server=[url]     DistEvo server URL. Takes hostname:port as arguments.
-             E.g. --server=localhost:8080
--h        --help            Show this usage description.
+    ./optimizer.py -h
+    Usage: python optimizer.py [-djs:h] [--driver] [--jobs] [--server=] [--help]
+    -d        --driver          Starts optimization driver to manage population.
+    -j        --jobs            Use asynchronous multiprocess jobs.
+    -s[url]    --server=[url]   DistEvo server URL. Takes hostname:port as arguments.
+                                E.g. --server=localhost:8080
+    -h        --help            Show this usage description.
 
 --driver or -d will start the optimization driver in parallel to the dispatcher, which is a quite practical thing to do as the driver does not use much CPU time and it also helps reducing the amount of network communication by sharing the status information between the two components.
 --jobs or -j uses python’s multiprocess API to create a pool of dispatchers. The size of this pool is determined by the numbers of cores available in the machine. Therefore, an evaluation is individually started on every single core avoiding parallelization problems.
