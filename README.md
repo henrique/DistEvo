@@ -86,7 +86,11 @@ You can also choose to use your preferable package system for python like pip or
 ### Google App Engine
 
 For the moment we only support running the central server on Google App Engine (GAE), however the implementation only requires a very simple REST API which could be met by any kind of web server. The cloud infrastructure of GAE has the advantage of been very reliable and scalable, and it has a free version for testing with quite reasonable daily quotas.
-You can simply install their SDK from: https://developers.google.com/appengine/downloads#Google_App_Engine_SDK_for_Python and run ...
+You can simply install their SDK from: https://developers.google.com/appengine/downloads#Google_App_Engine_SDK_for_Python and run:
+
+    ./dev_appserver.py path/to/DistEvo/webapp
+
+This command will start the GAE development server and its local database.
 
 
 Testing & running
@@ -94,7 +98,7 @@ Testing & running
     
 Each file within distEvo should be testable by itself, by simply running it as a script. The main start point is optimizer.py, which when run will start the whole chain of optimization using a multi-dimensional Rosenbrock function for testing. This script can be used to run a multi-core dispatcher and optionally also an optimization driver by simply running:
 
-    optimizer.py -jd
+    ./optimizer.py -jd
 
 You could run the driver and the dispatcher in separate processes but the helper script optmizer.py can effitiently run both in parallel, as the driver does not use much CPU power and can safelly wait for the conclusion of the availabel jobs.
 
