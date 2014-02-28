@@ -119,7 +119,7 @@ The optimizer.py is also the best sample for an optimization script. In other to
         """ Test 3D Optimization """
         lower_bounds = np.array([0.0, 0.0, 0.0])
         upper_bounds = np.array([2.0, 2.0, 2.0])
-        opt = BaseOptimization(20, lower_bounds, upper_bounds, test_evaluation)
+        opt = BaseOptimization(population_size=20, lower_bounds, upper_bounds, test_evaluation)
         OptimizationCmd(opt).run()
     
     if __name__ == '__main__':
